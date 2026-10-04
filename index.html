@@ -630,6 +630,87 @@ html.embed,.embed body{ height:auto; overflow:visible }
   .log-sets{ grid-template-columns:40px 1fr 18px 1fr }
   .big-in{ width:100%; font-size:44px }
 }
+
+/* ══ embed only: AA colours, 12px floor, lb lines, Fitbit banner ══
+   Standalone keeps the brighter palette and its 10px and 11px labels. */
+html.embed{
+  --red:#bf3516; --green:#1a7655; --purple:#873ce0;
+}
+html.embed .lbl-s,
+html.embed .hero-stat-lbl,
+html.embed .hero-scale,
+html.embed .strip-cap,
+html.embed .ready-stat em,
+html.embed .pillar-tag,
+html.embed .week-cell-top,
+html.embed .week-chip,
+html.embed .week-extra,
+html.embed .sess-th,
+html.embed .grid-days div,
+html.embed .grid-months,
+html.embed .run-card-top,
+html.embed .cut-chart-head,
+html.embed .pace-stat span,
+html.embed .pace-legend,
+html.embed .note-filter,
+html.embed .note-cat,
+html.embed .note-date,
+html.embed .modal-sub,
+html.embed .prog-next,
+html.embed .pill-last,
+html.embed .pill-max,
+html.embed .log-prog-tag,
+html.embed .log-sets .th,
+html.embed .field-lbl,
+html.embed .imp-row-top span,
+html.embed .drawer-pill span,
+html.embed .drawer-note-date,
+html.embed .wordmark-sub,
+html.embed .chip-sync,
+html.embed .ready-pill,
+html.embed .bottom-tab,
+html.embed .hdr-date{
+  font-size:12px;
+}
+html.embed .grid-days div{ height:16px; line-height:16px }
+html.embed .grid-months{ height:24px }
+/* Faint is a border colour. Placeholder text uses muted so it stays AA. */
+html.embed input::placeholder,
+html.embed textarea::placeholder{ color:var(--muted) }
+html.embed .hero-mark{ display:none }
+html.embed .lb{ display:block; font-family:'Archivo',sans-serif; font-weight:700;
+  font-size:13px; letter-spacing:0.02em; color:var(--muted); margin-top:4px }
+html.embed .hero .lb,
+html.embed .cut-card .lb,
+html.embed .score-card .lb,
+html.embed .evening .lb{ color:inherit }
+html.embed .hero-top > span:first-child{ display:flex; flex-direction:column; align-items:flex-start }
+html.embed .hero-top .lb{ font-size:12px; font-weight:700; margin-top:2px }
+html.embed .hero-unit-col{ display:flex; flex-direction:column; align-items:flex-start; padding-bottom:6px }
+html.embed .hero-unit-col .lb{ font-size:16px; font-weight:800; letter-spacing:0.06em; margin-top:6px }
+html.embed .hero-stat-val small{ font-size:0.42em; margin-left:4px; letter-spacing:0.02em }
+html.embed .hero-stat-val .lb{ font-size:13px; font-weight:800; letter-spacing:0.04em; margin-top:6px }
+html.embed .hero-scale.v3{ height:40px }
+html.embed .hero-scale .lb{ font-size:12px; font-weight:700; margin-top:2px }
+html.embed .hero-scale > .e{ text-align:right }
+html.embed .hero-vel.v3{ display:flex; flex-direction:column; align-items:flex-start; gap:3px; white-space:normal }
+html.embed .hero-vel.v3 .lb{ margin:0; font-size:12px; font-weight:700; color:var(--on-ink-dim); letter-spacing:0.06em }
+html.embed .cut-val-col{ display:flex; flex-direction:column; align-items:flex-start }
+html.embed .cut-val-col .lb,
+html.embed .cut-target .lb{ font-size:12px; font-weight:800; margin-top:6px }
+html.embed .recap-val .lb{ font-size:13px; font-weight:800; margin-top:4px }
+html.embed .pillars.two{ grid-template-columns:repeat(2,minmax(0,1fr)) }
+html.embed .fit-banner{ margin-top:16px; border:3px dashed var(--muted); padding:14px 20px;
+  display:flex; align-items:center; justify-content:space-between; gap:16px }
+html.embed .fit-banner p{ font-weight:600; font-size:14px; color:var(--ink); margin:0 }
+html.embed .fit-banner p b{ font-weight:800; letter-spacing:0.12em; font-size:12px; margin-right:10px }
+html.embed .fit-banner p span{ color:var(--muted); font-weight:600 }
+@media (max-width:768px){
+  html.embed .fit-banner{ flex-direction:column; align-items:stretch }
+  html.embed .fit-banner .btn-red{ text-align:center }
+  html.embed .fit-banner p b{ display:block; margin:0 0 4px }
+  html.embed .pillars.two{ grid-template-columns:1fr 1fr }
+}
 </style>
 </head>
 <body>
@@ -667,9 +748,9 @@ html.embed,.embed body{ height:auto; overflow:visible }
 // One colour per program type. Nothing else may use these.
 // PT takes the purple that UPPER had; Chris's PUSH/PULL/LEGS stay only so any
 // imported history still colours correctly.
-const TYPE_COLOR = { PUSH:'#f4a800', PULL:'#2e44c8', LEGS:'#1e8a63', PT:'#9b5de5' }
+const TYPE_COLOR = { PUSH:'#f4a800', PULL:'#2e44c8', LEGS:'var(--green)', PT:'var(--purple)' }
 const INK = '#1a1610', PAPER = '#efe9da', CARD = '#f7f1e3', MUTED = '#6b6555'
-const RED = '#e5431e', GOLD = '#f4a800', BLUE = '#2e44c8', GREEN = '#1e8a63', AMBER = '#b87d00'
+const RED = 'var(--red)', GOLD = '#f4a800', BLUE = '#2e44c8', GREEN = 'var(--green)', AMBER = '#b87d00'
 
 // Text on gold is ink; text on every other fill is paper.
 const typeColor = t => TYPE_COLOR[t] || MUTED
@@ -802,6 +883,17 @@ const asDate = iso => new Date(iso + 'T12:00:00')
 const daysBetween = (a, b) => Math.round((asDate(b) - asDate(a)) / 86400000)
 
 function fmtKg(v) { if (v == null) return '—'; const n = parseFloat(v); return n === Math.floor(n) ? String(Math.floor(n)) : n.toFixed(1) }
+const LB_PER_KG = 2.20462
+function fmtLb(kg) {
+  const n = parseFloat(kg)
+  return Number.isFinite(n) ? (Math.abs(n) * LB_PER_KG).toFixed(1) : null
+}
+// Embed only: a small line under a kilogram figure. Standalone gets an empty string.
+function lbHTML(kg, suffix = 'LB') {
+  if (!EMBED) return ''
+  const lb = fmtLb(kg)
+  return lb == null ? '' : `<span class="lb">${lb} ${suffix}</span>`
+}
 // Month and day names are spelled out here rather than left to the locale, which
 // renders September as SEPT and breaks the fixed-width datelines.
 const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
@@ -1096,8 +1188,10 @@ function heroChartSVG(data, goalKg, opts = {}) {
   const inWin = daysToGoal > 0 && dxMs(crossMs) <= rightX
   const endX = inWin ? dxMs(crossMs) : rightX
   const endY = inWin ? gy : py(lastSm - ((tEnd - lastMs)/86400000)/7)
-  const txt = (x, y, size, fill, s, anchor = 'start', ls = 1) =>
-    `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-family="Archivo,sans-serif" font-weight="800" font-size="${(size*L).toFixed(1)}" letter-spacing="${ls}" text-anchor="${anchor}" fill="${fill}">${s}</text>`
+  const txt = (x, y, size, fill, s, anchor = 'start', ls = 1) => {
+    const px = EMBED ? Math.max(12, size * L) : size * L
+    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-family="Archivo,sans-serif" font-weight="800" font-size="${px.toFixed(1)}" letter-spacing="${ls}" text-anchor="${anchor}" fill="${fill}">${s}</text>`
+  }
 
   let out = ''
   out += `<line x1="${pl}" y1="${gy.toFixed(1)}" x2="${rightX}" y2="${gy.toFixed(1)}" stroke="rgba(${accent},0.5)" stroke-width="1.5" stroke-dasharray="6 4"/>`
@@ -1187,9 +1281,13 @@ function heroHTML(mode) {
   const bw = todayData.bodyWeight
   const start = goals.bw_start, goal = goals.bw_goal
   if (!bw || !start || !goal) {
+    const kg = bw ? bw.weight_kg : null
+    const unit = EMBED
+      ? `<span class="hero-unit-col"><span class="hero-kg-unit">KG</span>${lbHTML(kg)}</span>`
+      : `<span class="hero-kg-unit">KG</span>`
     return `<div class="hero">
       <div class="hero-top"><span>THE CUT</span></div>
-      <div class="hero-num"><span class="hero-kg">${bw ? fmtKg(bw.weight_kg) : '—'}</span><span class="hero-kg-unit">KG</span></div>
+      <div class="hero-num"><span class="hero-kg">${kg != null ? fmtKg(kg) : '—'}</span>${unit}</div>
       <div class="hero-foot">
         <span class="hero-eta">${bw ? 'Set a start and goal weight on the Goals tab.' : 'Log a weight to start the cut.'}</span>
         <button class="hero-btn invert" data-act="open-weight">+ LOG WEIGHT</button>
@@ -1224,20 +1322,33 @@ function heroHTML(mode) {
   const marks = milestones(start, goal).map(([kg, note]) =>
     ({ kg, note, left: ((start - kg) / (start - goal) * 100).toFixed(1) + '%' }))
 
+  const kgUnit = EMBED ? '<small>KG</small>' : ''
   const stats = [
-    { lbl:'LOST', val: `${lost >= 0 ? '−' : '+'}${fmtKg(Math.abs(lost))}` },
-    { lbl:'TO GO', val: toGo.toFixed(1) },
+    { lbl:'LOST', val: `${lost >= 0 ? '−' : '+'}${fmtKg(Math.abs(lost))}${kgUnit}${lbHTML(lost)}` },
+    { lbl:'TO GO', val: `${toGo.toFixed(1)}${kgUnit}${lbHTML(toGo)}` },
     { lbl:'DONE', val: Math.round(pct) + '%' },
   ]
+  const unit = EMBED
+    ? `<span class="hero-unit-col"><span class="hero-kg-unit">KG</span>${lbHTML(w)}</span>`
+    : `<span class="hero-kg-unit">KG</span>`
+  const rangeLb = EMBED ? `<span class="lb">${fmtLb(start)} → ${fmtLb(goal)} LB</span>` : ''
+  const velLb = EMBED && weekly != null ? `<span class="lb">${(Math.abs(weekly) * LB_PER_KG).toFixed(1)} LB/WK</span>` : ''
+  const vel = velLb
+    ? `<span class="hero-vel v3"><span>${velTxt} <i>${trackTxt}</i></span>${velLb}</span>`
+    : `<span class="hero-vel">${velTxt} <i>${trackTxt}</i></span>`
+  // Embed drops the 100 / 95 captions; the ticks stay. Standalone keeps both.
+  const captions = EMBED ? '' : marks.map(k => `<span class="hero-mark" style="--l:${k.left}">${k.kg}<br><i>${k.note}</i></span>`).join('')
+  const startLbl = EMBED ? `${start} KG START${lbHTML(start)}` : `${start} START`
+  const endLbl = EMBED ? `${goal} KG FINISH ⚑${lbHTML(goal)}` : `${goal} FINISH ⚑`
   return `<div class="hero">
     <div class="hero-top">
-      <span>THE CUT · ${start} → ${goal} KG</span>
+      <span>THE CUT · ${start} → ${goal} KG${rangeLb}</span>
       <span class="hero-top-r">
         <span class="hero-status${mode.notWeighed ? ' warn' : ''}">${status}</span>
         <span>DAY ${day}</span>
       </span>
     </div>
-    <div class="hero-num"><span class="hero-kg">${fmtKg(w)}</span><span class="hero-kg-unit">KG</span></div>
+    <div class="hero-num"><span class="hero-kg">${fmtKg(w)}</span>${unit}</div>
     <div class="hero-stats">${stats.map(s =>
       `<div><div class="hero-stat-lbl">${s.lbl}</div><div class="hero-stat-val">${s.val}</div></div>`).join('')}</div>
     <div class="hero-barwrap">
@@ -1246,15 +1357,15 @@ function heroHTML(mode) {
         ${marks.map(k => `<div class="hero-tick" style="--l:${k.left}"></div>`).join('')}
         <div class="hero-marker"></div>
       </div>
-      <div class="hero-scale">
-        <span class="s">${start} START</span>
-        ${marks.map(k => `<span class="hero-mark" style="--l:${k.left}">${k.kg}<br><i>${k.note}</i></span>`).join('')}
-        <span class="e">${goal} FINISH ⚑</span>
+      <div class="hero-scale${EMBED ? ' v3' : ''}">
+        <span class="s">${startLbl}</span>
+        ${captions}
+        <span class="e">${endLbl}</span>
       </div>
     </div>
     <div class="hero-foot">
       <div class="hero-foot-l">
-        <span class="hero-vel">${velTxt} <i>${trackTxt}</i></span>
+        ${vel}
         <span class="hero-eta">${esc(eta)}</span>
       </div>
       <button class="hero-btn${mode.notWeighed ? ' invert' : ''}" data-act="open-weight">+ LOG WEIGHT</button>
@@ -1306,7 +1417,7 @@ function eveningHTML(mode) {
     <div class="evening-stats">${stats.map(s =>
       `<div><div class="hero-stat-lbl on-dim">${s.lbl}</div><div class="hero-stat-val">${s.val}</div></div>`).join('')}</div>
     <div class="evening-foot">
-      <span class="evening-wt">${bw ? `${fmtKg(bw.weight_kg)} KG THIS MORNING · ${velTxt} · ${track}` : 'NO WEIGH-IN YET'}</span>
+      <span class="evening-wt">${bw ? `${fmtKg(bw.weight_kg)} KG THIS MORNING${lbHTML(bw.weight_kg)} · ${velTxt} · ${track}` : 'NO WEIGH-IN YET'}</span>
       <button class="evening-btn" data-act="${HEAD.on}">${HEAD.act}</button>
     </div>
   </div>`
@@ -1344,7 +1455,7 @@ function recapCardHTML(mode) {
   const a = bwOn(addDays(prevMon, -1)), b = bwOn(prevSun)
   const lost = a != null && b != null ? a - b : null
   const stats = [
-    { lbl:'KG LOST', val: lost == null ? '—' : `${lost >= 0 ? '−' : '+'}${fmtKg(Math.abs(lost))}` },
+    { lbl:'KG LOST', val: lost == null ? '—' : `${lost >= 0 ? '−' : '+'}${fmtKg(Math.abs(lost))}${lbHTML(lost)}` },
     { lbl:'SESSIONS', val: `${sessions.filter(s => days.includes(s.date)).length} / ${PER_WEEK}` },
     { lbl:'DAYS AT 4/4', val: `${days.filter(d => dayScore(m[d]) === 4).length} / 7` },
     { lbl:'FOOD ON PLAN', val: `${days.filter(d => m[d] && m[d].diet_ok).length} / 7` },
@@ -1452,9 +1563,8 @@ function pillarsHTML(mode) {
       action:'LOG SESSION', act:'open-pick' }
   }
 
-  const off = fbHidden()
-  const list = off ? [food, workout] : [sleep, food, steps, workout]
-  return (off ? '<div class="pillar-off lbl-s">HIDDEN UNTIL FITBIT RECONNECTS</div>' : '') + list.map(p => {
+  const list = fbHidden() ? [food, workout] : [sleep, food, steps, workout]
+  return list.map(p => {
     const attrs = [`data-act="${p.act || ''}"`]
     if (p.type) attrs.push(`data-type="${p.type}"`)
     if (p.id) attrs.push(`data-id="${p.id}"`)
@@ -1480,7 +1590,17 @@ function renderToday(mode) {
       <div class="today-right">${card}${readyCardHTML(mode)}</div>
     </div>
     <div class="log-head"><span>LOG TODAY</span><span class="meta">${mode.score} OF ${mode.max} DONE</span></div>
-    <div class="pillars">${pillarsHTML(mode)}</div>`
+    <div class="pillars${fbHidden() ? ' two' : ''}">${pillarsHTML(mode)}</div>
+    ${fitbitBannerHTML()}`
+}
+
+function fitbitBannerHTML() {
+  if (!fbHidden()) return ''
+  const url = syncFitbit.reconnect_url || '/auth/google-health'
+  return `<div class="fit-banner">
+    <p><b>SLEEP + STEPS HIDDEN</b><span>Fitbit isn't connected. They come back here once it syncs again.</span></p>
+    <button class="btn-red" data-act="reconnect" data-url="${esc(url)}">RECONNECT FITBIT ↗</button>
+  </div>`
 }
 // ══════════════════════════════════════════════════════════════════════════════
 // TRAINING
@@ -1542,7 +1662,7 @@ function recentSessionsHTML() {
     return `<div class="sess-row">
       <div class="sess-head">
         <button class="sess-chip" style="--c:${typeColor(t)};--fg:${typeFg(t)}" data-act="session" data-id="${s.id}">■ SESSION ${no} · ${t}</button>
-        <span class="sess-date">${fmtDate(s.date)}${bw ? ` · ${fmtKg(bw)} KG BW` : ''}</span>
+        <span class="sess-date">${fmtDate(s.date)}${bw ? ` · ${fmtKg(bw)} KG BW${lbHTML(bw)}` : ''}</span>
         <span class="sess-meta">${s.exercise_count} EXERCISES · ${s.total_sets} SETS${s.volume_kg ? ` · ${num(Math.round(s.volume_kg))} KG` : ''}</span>
       </div>
       ${rows ? `<div class="sess-table">
@@ -1794,7 +1914,9 @@ function cutCardHTML() {
   return `<div class="cut-card">
     <div class="cut-left">
       <div class="lbl">BODYWEIGHT · THE CUT</div>
-      <div class="cut-num"><span class="cut-val">${fmtKg(w)}</span><span class="cut-target">→ ${goal} KG</span></div>
+      <div class="cut-num">${EMBED
+        ? `<span class="cut-val-col"><span class="cut-val">${fmtKg(w)}</span>${lbHTML(w)}</span><span class="cut-target">→ ${goal} KG${lbHTML(goal)}</span>`
+        : `<span class="cut-val">${fmtKg(w)}</span><span class="cut-target">→ ${goal} KG</span>`}</div>
       <div class="cut-pct">${Math.round(pct)}% <span>OF THE WAY</span></div>
       <div class="cut-bar" style="--pct:${pct.toFixed(1)}%"><i></i></div>
       <div class="cut-summary">${esc(summary)}</div>
@@ -1950,12 +2072,12 @@ function openWeight() {
   const prev = hist.filter(h => h.date !== localIso()).pop()
   modalRoot().innerHTML = shell({
     title:"TODAY'S WEIGHT",
-    sub:`THE CUT · ${goals.bw_start || '—'} → ${goals.bw_goal || '—'} KG`,
+    sub:`THE CUT · ${goals.bw_start || '—'} → ${goals.bw_goal || '—'} KG${EMBED && goals.bw_start && goals.bw_goal ? `<span class="lb">${fmtLb(goals.bw_start)} → ${fmtLb(goals.bw_goal)} LB</span>` : ''}`,
     body:`<div class="big-in-row">
       <input id="in-weight" class="big-in" type="number" step="0.1" inputmode="decimal" value="${bw && bw.date === localIso() ? bw.weight_kg : ''}">
-      <span class="big-in-unit">KG</span>
+      <span class="big-in-unit">KG${bw && bw.date === localIso() ? lbHTML(bw.weight_kg) : ''}</span>
     </div>
-    <div class="modal-hint">${prev ? `Last weigh-in: ${fmtKg(prev.weight_kg)} kg on ${fmtDate(prev.date)}.` : 'First weigh-in.'}</div>`,
+    <div class="modal-hint">${prev ? `Last weigh-in: ${fmtKg(prev.weight_kg)} kg on ${fmtDate(prev.date)}.${lbHTML(prev.weight_kg)}` : 'First weigh-in.'}</div>`,
     ghost:'CANCEL', primary:'SAVE WEIGHT', primaryAct:'save-weight',
   })
   focusFirst('#in-weight')
@@ -2195,7 +2317,7 @@ async function openSessionDetail(id, pushHash = true) {
       <span class="sess-reps">${(e.sets || []).map(x => x.reps).join(', ') || '—'}</span>`
   }).join('')
   modalRoot().innerHTML = shell({
-    title:`SESSION ${no}`, sub:`${t} · ${fmtDate(s.date)}${bw ? ` · ${fmtKg(bw)} KG BW` : ''}`,
+    title:`SESSION ${no}`, sub:`${t} · ${fmtDate(s.date)}${bw ? ` · ${fmtKg(bw)} KG BW${lbHTML(bw)}` : ''}`,
     spine: typeColor(t), wide:true,
     body:`<div class="sess-meta" style="margin-left:0">${(s.exercises||[]).length} EXERCISES · ${sets.length} SETS${vol ? ` · ${num(Math.round(vol))} KG` : ''}</div>
       ${s.note ? `<div class="sess-note">Focus: ${esc(s.note)}</div>` : ''}
@@ -2577,9 +2699,31 @@ async function init() {
 // replaceState keeps the hash in step without adding to the parent's back history.
 if (EMBED) window.addEventListener('message', e => {
   if (e.origin !== location.origin || !e.data || e.data.type !== 'fitlog:tab' || !TABS.includes(e.data.tab)) return
-  setTab(e.data.tab, false)
-  history.replaceState(null, '', tab === 'today' ? '#' : `#${tab}`)
+  const next = e.data.tab
+  setTab(next, false)
+  history.replaceState(null, '', next === 'today' ? '#' : `#${next}`)
 })
+
+// Embed: a reconnect happens in another tab, so pick up the new Fitbit status
+// when this window is focused or becomes visible again. No polling.
+if (EMBED) {
+  let fitbitRefresh = null
+  const refreshFitbit = () => {
+    if (document.visibilityState === 'hidden') return
+    if (fitbitRefresh) return
+    fitbitRefresh = (async () => {
+      try {
+        const f = await api('GET', '/api/fitbit/status')
+        syncFitbit = f || { connected:false, ok:false, reconnect_url:'/auth/google-health' }
+        render()
+      } finally { fitbitRefresh = null }
+    })()
+  }
+  window.addEventListener('focus', refreshFitbit)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshFitbit()
+  })
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // EVENTS — one delegated listener, no inline handlers
@@ -2617,7 +2761,11 @@ const ACTIONS = {
   'note-cat': el => { noteCat = el.dataset.cat; renderNotes() },
   drawer: el => openDrawer(el.dataset.name),
   session: el => openSessionDetail(+el.dataset.id),
-  reconnect: el => { location.href = withBase(el.dataset.url || '/auth/google-health') },
+  reconnect: el => {
+    const url = withBase(el.dataset.url || '/auth/google-health')
+    if (EMBED) window.open(url, '_blank', 'noopener')
+    else location.href = url
+  },
   'import-preview': () => importPreview(),
   'import-confirm': () => importConfirm(),
   'pr-close': () => { closePR(); setTab('training') },
