@@ -45,6 +45,9 @@ a{ color:inherit; text-decoration:none }
 .app{ height:100vh; display:flex; flex-direction:column; overflow:hidden; position:relative }
 /* ?embed=1: the host page (robert-hub) supplies the header and tabs. */
 .embed .hdr,.embed .bottom-nav{ display:none !important }
+/* …and the document scrolls at its content height, so the host can size the iframe. */
+html.embed,.embed body{ height:auto; overflow:visible }
+.embed .app{ height:auto; min-height:0; overflow:visible }
 
 /* ══ header ══ */
 .hdr{ display:grid; grid-template-columns:auto 1fr auto; align-items:stretch;
@@ -226,6 +229,8 @@ a{ color:inherit; text-decoration:none }
 .pillar.done .pillar-btn{ background:transparent; color:var(--fg); border-color:var(--fg) }
 .pillar-btn.cta{ background:var(--red); color:var(--paper); border-color:var(--ink) }
 .pillar-btn.warn{ background:var(--red); color:var(--paper); border-color:var(--ink) }
+.pillar-off{ grid-column:span 2; border:2px dashed var(--ink); color:var(--muted); padding:18px 20px;
+  display:flex; align-items:center; justify-content:center; text-align:center }
 
 /* ══ training: week strip ══ */
 .week{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:12px }
@@ -740,7 +745,16 @@ const BASE = (location.pathname.match(/^\/fitlog(?=\/|$)/) || [''])[0]
 const withBase = u => u.startsWith('/') ? BASE + u : u
 // ?embed=1 hides FITLOG's own chrome; the host drives tabs through the hash (#goals).
 const EMBED = new URLSearchParams(location.search).get('embed') === '1'
-document.body.classList.toggle('embed', EMBED)
+document.documentElement.classList.toggle('embed', EMBED)
+// Framed by the hub: report the content height to the parent (same origin only).
+const IN_FRAME = EMBED && window.parent !== window
+function postHeight() {
+  if (!IN_FRAME) return
+  const height = Math.ceil(document.querySelector('.app').getBoundingClientRect().height)
+  window.parent.postMessage({ type:'fitlog:height', height }, location.origin)
+}
+// Embed hides SLEEP and STEPS while Fitbit is down; today's score counts the other two.
+const fbHidden = () => EMBED && syncFitbit.ok === false
 
 // ══════════════════════════════════════════════════════════════════════════════
 // STATE
@@ -833,10 +847,11 @@ function typeOf(s) {
 const isLift = s => LIFT_TYPES.includes(typeOf(s))
 
 // One scoring function for the day: sleep, food, steps, workout.
-function dayScore(h) {
+// fbOff drops the two Fitbit pillars (embed mode while Fitbit is disconnected).
+function dayScore(h, fbOff = false) {
   if (!h) return 0
-  return (h.sleep_h > 0 ? 1 : 0) + (h.diet_ok ? 1 : 0)
-    + (h.steps >= STEP_TARGET ? 1 : 0) + (h.workout ? 1 : 0)
+  return (!fbOff && h.sleep_h > 0 ? 1 : 0) + (h.diet_ok ? 1 : 0)
+    + (!fbOff && h.steps >= STEP_TARGET ? 1 : 0) + (h.workout ? 1 : 0)
 }
 function habitMap() {
   const m = {}; habitsData.forEach(h => { m[h.date] = h }); return m
@@ -1009,7 +1024,7 @@ function deriveMode() {
   const hour = new Date().getHours()
   const hist = [...(todayData.bwHistory || [])].sort((a,b) => a.date < b.date ? -1 : 1)
   const weighedToday = hist.some(b => b.date === today)
-  const score = dayScore(habitMap()[today])
+  const score = dayScore(habitMap()[today], fbHidden())
   const ready = readiness()
   const bump = hist.length >= 2
     && hist[hist.length-1].weight_kg - hist[hist.length-2].weight_kg >= BUMP_KG
@@ -1019,7 +1034,7 @@ function deriveMode() {
     monday: new Date().getDay() === 1,
     red: ready.verdict === 'RED',
     bump,
-    score, hour, ready, today,
+    score, max: fbHidden() ? 2 : 4, hour, ready, today,
   }
 }
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1308,7 +1323,7 @@ function scoreCardHTML(mode) {
   return `<div class="score-card">
     <div class="lbl on-dim">TODAY</div>
     <div class="score-row">
-      <div class="score-num"><span class="score-val">${mode.score}/4</span><span class="lbl-m">DONE</span></div>
+      <div class="score-num"><span class="score-val">${mode.score}/${mode.max}</span><span class="lbl-m">DONE</span></div>
       <div style="text-align:right">
         <div class="streak-val">${streak}</div>
         <div class="lbl-s on-dim" style="margin-top:4px">DAY STREAK</div>
@@ -1437,8 +1452,9 @@ function pillarsHTML(mode) {
       action:'LOG SESSION', act:'open-pick' }
   }
 
-  const list = [sleep, food, steps, workout]
-  return list.map(p => {
+  const off = fbHidden()
+  const list = off ? [food, workout] : [sleep, food, steps, workout]
+  return (off ? '<div class="pillar-off lbl-s">HIDDEN UNTIL FITBIT RECONNECTS</div>' : '') + list.map(p => {
     const attrs = [`data-act="${p.act || ''}"`]
     if (p.type) attrs.push(`data-type="${p.type}"`)
     if (p.id) attrs.push(`data-id="${p.id}"`)
@@ -1463,7 +1479,7 @@ function renderToday(mode) {
       ${left}
       <div class="today-right">${card}${readyCardHTML(mode)}</div>
     </div>
-    <div class="log-head"><span>LOG TODAY</span><span class="meta">${mode.score} OF 4 DONE</span></div>
+    <div class="log-head"><span>LOG TODAY</span><span class="meta">${mode.score} OF ${mode.max} DONE</span></div>
     <div class="pillars">${pillarsHTML(mode)}</div>`
 }
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2491,6 +2507,7 @@ function render() {
   if (tab === 'training') renderTraining()
   if (tab === 'goals') renderGoals()
   if (tab === 'notes') renderNotes()
+  postHeight()
 }
 
 function setTab(t, pushHash = true) {
@@ -2549,8 +2566,20 @@ async function reload(keys) {
 
 async function init() {
   await Promise.all(Object.values(LOADERS).map(fn => fn()))
-  handleHash()
+  // Embed: ?tab= picks the opening tab and wins over the hash.
+  const qTab = EMBED && new URLSearchParams(location.search).get('tab')
+  if (TABS.includes(qTab)) setTab(qTab, false)
+  else handleHash()
+  if (IN_FRAME) new ResizeObserver(postHeight).observe(document.querySelector('.app'))
 }
+
+// Embed: the hub switches tabs with postMessage({ type:'fitlog:tab', tab }), same origin only.
+// replaceState keeps the hash in step without adding to the parent's back history.
+if (EMBED) window.addEventListener('message', e => {
+  if (e.origin !== location.origin || !e.data || e.data.type !== 'fitlog:tab' || !TABS.includes(e.data.tab)) return
+  setTab(e.data.tab, false)
+  history.replaceState(null, '', tab === 'today' ? '#' : `#${tab}`)
+})
 
 // ══════════════════════════════════════════════════════════════════════════════
 // EVENTS — one delegated listener, no inline handlers
