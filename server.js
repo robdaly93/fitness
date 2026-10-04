@@ -4,6 +4,7 @@ const path = require('path')
 
 const fs = require('fs')
 const { execSync, spawn } = require('child_process')
+const { publicOrigin, frameAncestorsDirective, debugEnabled } = require('./http-guard')
 const PORT = process.env.PORT || 7779
 // The Fly app this install deploys to, read from fly.toml so a fork changes one
 // config line and nothing in the code.
@@ -11,10 +12,10 @@ const FLY_APP = process.env.FLY_APP || (() => {
   try { return (fs.readFileSync(path.join(__dirname, 'fly.toml'), 'utf8').match(/^app *= *['"]([^'"]+)/m) || [])[1] || null }
   catch { return null }
 })()
-// Base URL for OAuth callbacks. On Fly it follows the app name; set PUBLIC_URL for a
-// custom domain or a tunnel.
-const PUBLIC_URL = process.env.PUBLIC_URL
-  || (process.env.FLY_APP_NAME ? `https://${process.env.FLY_APP_NAME}.fly.dev` : `http://localhost:${process.env.PORT || 7779}`)
+// Base URL for OAuth callbacks. No path: fitlog is served at the root of its own
+// host (https://fitlog.example.com). A trailing slash is stripped so the callback
+// is ${PUBLIC_URL}/auth/... and not a double slash. On Fly it follows the app name.
+const PUBLIC_URL = publicOrigin(process.env)
 const dbPath = process.env.DB_PATH || path.join(__dirname, 'fitness.db')
 // node-sqlite3-wasm uses a .lock directory — remove stale one from crashed previous run
 try { fs.rmdirSync(dbPath + '.lock') } catch (e) {}
@@ -134,8 +135,24 @@ function classifyRun(distanceKm, durationSec, label) {
 }
 
 const app = express()
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('Content-Security-Policy', `frame-ancestors ${frameAncestorsDirective(process.env.FRAME_ANCESTORS)}`)
+  next()
+})
 app.use(express.json())
 app.use(express.static(__dirname))
+
+// Fixed pages only. Query values and provider errors are never written into HTML.
+function authPage(title, message, retry) {
+  const again = retry
+    ? `<p><a href="${retry}">Try again</a></p>`
+    : '<p><a href="/">Back to FITLOG</a></p>'
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>${title}</title></head><body><h2>${title}</h2><p>${message}</p>${again}</body></html>`
+}
+function sendAuth(res, status, title, message, retry) {
+  res.status(status).type('html').send(authPage(title, message, retry))
+}
 
 // node-sqlite3-wasm requires an array for multiple bind params
 const q = (sql) => db.prepare(sql)
@@ -507,12 +524,17 @@ const { google } = require('googleapis')
 const TOKENS_PATH = process.env.FLY_APP_NAME
   ? '/data/.google-tokens.json'
   : path.join(__dirname, '.google-tokens.json')
-const CREDS = process.env.FLY_APP_NAME
-  ? { client_id: process.env.GOOGLE_CLIENT_ID, client_secret: process.env.GOOGLE_CLIENT_SECRET, redirect_uris: [`${PUBLIC_URL}/auth/google-health/callback`] }
+const GOOGLE_REDIRECT = `${PUBLIC_URL}/auth/google-health/callback`
+const CREDS = (process.env.GOOGLE_CLIENT_ID || process.env.FLY_APP_NAME)
+  ? { client_id: process.env.GOOGLE_CLIENT_ID, client_secret: process.env.GOOGLE_CLIENT_SECRET, redirect_uris: [GOOGLE_REDIRECT] }
   : (() => {
       // Local patch: Google Health is optional, so start without credentials.
-      try { return JSON.parse(fs.readFileSync(path.join(__dirname, '.google-credentials.json'))).web }
-      catch { return { client_id: undefined, client_secret: undefined, redirect_uris: [`${PUBLIC_URL}/auth/google-health/callback`] } }
+      // An explicit PUBLIC_URL (a root custom domain) replaces the file's redirect.
+      try {
+        const web = JSON.parse(fs.readFileSync(path.join(__dirname, '.google-credentials.json'))).web
+        return process.env.PUBLIC_URL ? { ...web, redirect_uris: [GOOGLE_REDIRECT] } : web
+      }
+      catch { return { client_id: undefined, client_secret: undefined, redirect_uris: [GOOGLE_REDIRECT] } }
     })()
 
 const oauth2Client = new google.auth.OAuth2(
@@ -544,16 +566,18 @@ app.get('/auth/google-health', (req, res) => {
 })
 
 app.get('/auth/google-health/callback', async (req, res) => {
-  const { code, error } = req.query
-  if (error) return res.send(`<h2>Auth error: ${error}</h2><p><a href="/auth/google-health">Try again</a></p>`)
+  const code = typeof req.query.code === 'string' ? req.query.code : ''
+  if (req.query.error || !code) {
+    return sendAuth(res, 400, 'Sign-in failed', 'Google did not complete sign-in. You can close this tab and try again.', '/auth/google-health')
+  }
   try {
     const { tokens } = await oauth2Client.getToken(code)
     oauth2Client.setCredentials(tokens)
     saveTokens(tokens)
-    res.send('<h2>Fitbit connected!</h2><p>You can close this tab. <a href="/">Back to FITLOG</a></p>')
+    sendAuth(res, 200, 'Fitbit connected', 'You can close this tab.')
   } catch (e) {
     console.error('OAuth callback error:', e.message)
-    res.send(`<h2>Auth failed</h2><p>${e.message}</p><p><a href="/auth/google-health">Try again</a></p>`)
+    sendAuth(res, 400, 'Sign-in failed', 'Fitbit could not be connected. You can close this tab and try again.', '/auth/google-health')
   }
 })
 
@@ -607,7 +631,7 @@ async function healthGetAll(pathPart, params, maxPages = 40) {
   return all
 }
 
-app.post('/api/fitbit/sync', async (req, res) => {
+async function fitbitSyncHandler(req, res) {
   const tokens = loadTokens()
   if (!tokens?.access_token) return res.status(401).json({ error: 'Not connected. Visit /auth/google-health first.' })
   oauth2Client.setCredentials(tokens)
@@ -743,6 +767,11 @@ app.post('/api/fitbit/sync', async (req, res) => {
 
   saveTokens({ ...loadTokens(), last_sync: new Date().toISOString(), last_error: null })
   res.json(results)
+}
+
+app.post('/api/fitbit/sync', (req, res) => {
+  if (!debugEnabled()) return res.status(404).json({ error: 'not found' })
+  return fitbitSyncHandler(req, res)
 })
 
 app.get('/api/recovery', (req, res) => {
@@ -750,7 +779,10 @@ app.get('/api/recovery', (req, res) => {
 })
 
 // Debug: see the raw Health API response for a data type while we verify shapes
-app.get('/api/health/raw', async (req, res) => {
+app.get('/api/health/raw', (req, res, next) => {
+  if (!debugEnabled()) return res.status(404).json({ error: 'not found' })
+  next()
+}, async (req, res) => {
   const tokens = loadTokens()
   if (!tokens?.access_token) return res.status(401).json({ error: 'Not connected' })
   oauth2Client.setCredentials(tokens)
@@ -778,7 +810,7 @@ const W_TOKENS_PATH = process.env.FLY_APP_NAME
   ? '/data/.withings-tokens.json'
   : path.join(__dirname, '.withings-tokens.json')
 const W_CREDS_PATH = path.join(__dirname, '.withings-credentials.json')
-const W_REDIRECT = `${PUBLIC_URL}/auth/withings/callback`
+const W_REDIRECT = `${PUBLIC_URL}/auth/withings/callback` // root host, no /fitlog prefix
 
 function wCreds() {
   if (process.env.WITHINGS_CLIENT_ID) return { client_id: process.env.WITHINGS_CLIENT_ID, client_secret: process.env.WITHINGS_CLIENT_SECRET }
@@ -823,15 +855,17 @@ app.get('/auth/withings', (req, res) => {
 })
 
 app.get('/auth/withings/callback', async (req, res) => {
-  const { code, error } = req.query
-  if (error || !code) return res.send(`<h2>Withings auth error: ${error || 'no code'}</h2><p><a href="/auth/withings">Try again</a></p>`)
+  const code = typeof req.query.code === 'string' ? req.query.code : ''
+  if (req.query.error || !code) {
+    return sendAuth(res, 400, 'Sign-in failed', 'Withings did not complete sign-in. You can close this tab and try again.', '/auth/withings')
+  }
   try {
     const t = await wRequestToken({ grant_type: 'authorization_code', code, redirect_uri: W_REDIRECT })
     wSaveTokens({ ...t, obtained_at: Date.now() })
-    res.send('<h2>Withings connected!</h2><p>You can close this tab. <a href="/">Back to FITLOG</a></p>')
+    sendAuth(res, 200, 'Withings connected', 'You can close this tab.')
   } catch (e) {
     console.error('Withings callback error:', e.message)
-    res.send(`<h2>Withings auth failed</h2><p>${e.message}</p><p><a href="/auth/withings">Try again</a></p>`)
+    sendAuth(res, 400, 'Sign-in failed', 'Withings could not be connected. You can close this tab and try again.', '/auth/withings')
   }
 })
 
@@ -839,7 +873,10 @@ app.get('/api/withings/status', (req, res) => {
   res.json(syncStatus(wLoadTokens(), { reconnect_url: '/auth/withings' }))
 })
 
-app.post('/api/withings/sync', async (req, res) => {
+app.post('/api/withings/sync', (req, res, next) => {
+  if (!debugEnabled()) return res.status(404).json({ error: 'not found' })
+  next()
+}, async (req, res) => {
   try {
     const token = await wAccessToken()
     const days = parseInt(req.query.days) || 14
@@ -882,6 +919,7 @@ app.post('/api/withings/sync', async (req, res) => {
 // ── DEV ONLY ────────────────────────────────────────────────────────────────
 if (!process.env.FLY_APP_NAME) {
   app.post('/api/dev/sync-prod', (req, res) => {
+    if (!debugEnabled()) return res.status(404).json({ error: 'not found' })
     res.json({ ok: true })
     setTimeout(() => {
       try {
@@ -905,8 +943,10 @@ app.listen(PORT, '0.0.0.0', () => console.log(`fitness on http://0.0.0.0:${PORT}
 // Google delivers Fitbit data late and revises it after the fact; re-syncing
 // every 4h lets the upserts self-heal without a manual /daily run.
 setInterval(() => {
-  fetch(`http://localhost:${PORT}/api/fitbit/sync?days=3`, { method: 'POST' })
-    .then(r => r.json())
-    .then(j => console.log(`auto-sync: ${(j.synced || []).length} updates${j.error ? ` (${j.error})` : ''}`))
+  const fakeRes = {
+    status() { return this },
+    json(j) { console.log(`auto-sync: ${(j.synced || []).length} updates${j.error ? ` (${j.error})` : ''}`) },
+  }
+  Promise.resolve(fitbitSyncHandler({ query: { days: '3' } }, fakeRes))
     .catch(e => console.log('auto-sync failed:', e.message))
 }, 4 * 3600 * 1000)

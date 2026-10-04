@@ -694,7 +694,15 @@ html.embed .hero-scale.v3{ height:40px }
 html.embed .hero-scale .lb{ font-size:12px; font-weight:700; margin-top:2px }
 html.embed .hero-scale > .e{ text-align:right }
 html.embed .hero-vel.v3{ display:flex; flex-direction:column; align-items:flex-start; gap:3px; white-space:normal }
+html.embed .hero-vel.v3 > span:first-child{ white-space:nowrap }
 html.embed .hero-vel.v3 .lb{ margin:0; font-size:12px; font-weight:700; color:var(--on-ink-dim); letter-spacing:0.06em }
+html.embed .score-card{ overflow:visible }
+html.embed .scan-lbl{ margin-top:18px; padding-top:14px; border-top:2px solid rgba(239,233,218,0.25) }
+html.embed .scan-row{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:10px }
+html.embed .scan-row b{ display:block; font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:36px; line-height:0.85 }
+html.embed .scan-row b small{ font-size:0.45em; margin-left:4px; letter-spacing:0.02em }
+html.embed .scan-row em{ display:block; font-style:normal; font-weight:800; font-size:12px; letter-spacing:0.1em; color:var(--on-ink-dim); margin-top:4px }
+html.embed .scan-row .lb{ color:var(--on-ink-dim); font-size:12px; font-weight:700; margin-top:4px }
 html.embed .cut-val-col{ display:flex; flex-direction:column; align-items:flex-start }
 html.embed .cut-val-col .lb,
 html.embed .cut-target .lb{ font-size:12px; font-weight:800; margin-top:6px }
@@ -740,6 +748,7 @@ html.embed .fit-banner p span{ color:var(--muted); font-weight:600 }
 
   <nav class="bottom-nav" id="bottom-nav"><div class="bottom-nav-inner"></div></nav>
 </div>
+<script src="weight-units.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════════════════════
 // CONFIG
@@ -883,11 +892,8 @@ const asDate = iso => new Date(iso + 'T12:00:00')
 const daysBetween = (a, b) => Math.round((asDate(b) - asDate(a)) / 86400000)
 
 function fmtKg(v) { if (v == null) return '—'; const n = parseFloat(v); return n === Math.floor(n) ? String(Math.floor(n)) : n.toFixed(1) }
-const LB_PER_KG = 2.20462
-function fmtLb(kg) {
-  const n = parseFloat(kg)
-  return Number.isFinite(n) ? (Math.abs(n) * LB_PER_KG).toFixed(1) : null
-}
+const LB_PER_KG = WeightUnits.LB_PER_KG
+function fmtLb(kg) { return WeightUnits.lbFromKg(kg) }
 // Embed only: a small line under a kilogram figure. Standalone gets an empty string.
 function lbHTML(kg, suffix = 'LB') {
   if (!EMBED) return ''
@@ -1091,7 +1097,7 @@ function readiness() {
   const sl = todayData.todaySleepHours || 0
   const rec = [...recoveryData].filter(r => r.rhr || r.hrv_ms).sort((a,b) => a.date < b.date ? -1 : 1)
   let verdict = 'GREEN', color = GREEN, short = 'TRAIN', advice = 'Train as planned. Push targets.'
-  let stats = [], rhrUp = 0
+  let stats = [], rhrUp = 0, asOf = null
   if (rec.length) {
     const latest = rec[rec.length-1], prior = rec.slice(-8, -1)
     const rhrBase = mean(prior.map(r => r.rhr).filter(Boolean))
@@ -1102,12 +1108,13 @@ function readiness() {
     else if (rhrUp >= 3 || hrvLow || (sl > 0 && sl < SLEEP_TARGET)) { verdict='AMBER'; color=AMBER; short='HOLD'; advice='Train, hold weights. No new PRs.' }
     if (latest.rhr) stats.push({ lbl:'RESTING HR', val: Math.round(latest.rhr), delta: rhrBase ? `${sgn(latest.rhr-rhrBase)} vs 7d` : '' })
     if (latest.hrv_ms) stats.push({ lbl:'HRV', val: Math.round(latest.hrv_ms), delta: hrvBase ? `${sgn(latest.hrv_ms-hrvBase)} vs 7d` : '' })
+    asOf = latest.date
   } else {
     if (sl > 0 && sl < 5.5) { verdict='RED'; color=RED; short='REST'; advice='Walk and mobility only. Protect the back.' }
     else if (sl > 0 && sl < SLEEP_TARGET) { verdict='AMBER'; color=AMBER; short='HOLD'; advice='Train, hold weights. No new PRs.' }
   }
   if (sl > 0) stats.push({ lbl:'SLEEP', val: sl.toFixed(1), delta:'HRS' })
-  return { verdict, color, short, advice, stats: stats.slice(0, 3), rhrUp }
+  return { verdict, color, short, advice, stats: stats.slice(0, 3), rhrUp, asOf }
 }
 
 // Mode comes from the clock and the data, never from a user setting.
@@ -1299,8 +1306,8 @@ function heroHTML(mode) {
   const pct = clampPct((start - w) / (start - goal) * 100)
   const proj = projection()
   const weekly = proj.weekly
-  const velTxt = weekly == null ? '— KG/WK'
-    : `${weekly < 0 ? '↓' : weekly > 0 ? '↑' : '='} ${Math.abs(weekly).toFixed(1)} KG/WK`
+  const pace = weekly == null ? null : WeightUnits.paceLines(weekly)
+  const velTxt = pace ? pace.kgText : '— KG/WK'
   const trackTxt = paceVerdict(weekly, w)
   const etaMs = proj.etaMs
   const cutStart = cutStartDate()
@@ -1332,7 +1339,7 @@ function heroHTML(mode) {
     ? `<span class="hero-unit-col"><span class="hero-kg-unit">KG</span>${lbHTML(w)}</span>`
     : `<span class="hero-kg-unit">KG</span>`
   const rangeLb = EMBED ? `<span class="lb">${fmtLb(start)} → ${fmtLb(goal)} LB</span>` : ''
-  const velLb = EMBED && weekly != null ? `<span class="lb">${(Math.abs(weekly) * LB_PER_KG).toFixed(1)} LB/WK</span>` : ''
+  const velLb = EMBED && pace ? `<span class="lb">${pace.lbText}</span>` : ''
   const vel = velLb
     ? `<span class="hero-vel v3"><span>${velTxt} <i>${trackTxt}</i></span>${velLb}</span>`
     : `<span class="hero-vel">${velTxt} <i>${trackTxt}</i></span>`
@@ -1427,10 +1434,15 @@ function scoreCardHTML(mode) {
   const m = habitMap()
   const streak = fullDayStreak()
   const shade = ['rgba(239,233,218,0.1)','rgba(244,168,0,0.22)','rgba(244,168,0,0.45)','rgba(244,168,0,0.7)','#f4a800']
+  const off = fbHidden()
   const cells = Array.from({ length:14 }, (_, i) => {
-    const dt = addDays(mode.today, i-13), s = dayScore(m[dt])
-    return `<div class="strip-cell${dt === mode.today ? ' is-today' : ''}" style="--b:${shade[s]}" title="${dt}: ${s}/4"></div>`
+    const dt = addDays(mode.today, i-13)
+    const s = dayScore(m[dt], off)
+    const max = off ? 2 : 4
+    const shadeIdx = off ? s * 2 : s
+    return `<div class="strip-cell${dt === mode.today ? ' is-today' : ''}" style="--b:${shade[shadeIdx]}" title="${dt}: ${s}/${max}"></div>`
   }).join('')
+  const fullLabel = off ? '2/2 = FULL' : '4/4 = FULL SQUARE'
   return `<div class="score-card">
     <div class="lbl on-dim">TODAY</div>
     <div class="score-row">
@@ -1440,11 +1452,35 @@ function scoreCardHTML(mode) {
         <div class="lbl-s on-dim" style="margin-top:4px">DAY STREAK</div>
       </div>
     </div>
+    ${scanRowHTML()}
     <div class="strip-wrap">
       <div class="strip">${cells}</div>
-      <div class="strip-cap"><span>LAST 14 DAYS</span><span>4/4 = FULL SQUARE</span></div>
+      <div class="strip-cap"><span>LAST 14 DAYS</span><span>${fullLabel}</span></div>
     </div>
   </div>`
+}
+
+function stykuScan() {
+  const date = goals.styku_date
+  const weightLb = parseFloat(goals.styku_weight_lb)
+  const bf = parseFloat(goals.styku_bf_pct)
+  const leanLb = parseFloat(goals.styku_lean_lb)
+  if (!date || !Number.isFinite(weightLb) || !Number.isFinite(bf) || !Number.isFinite(leanLb)) return null
+  return { date, weightLb, bf, leanLb }
+}
+
+function scanRowHTML() {
+  if (!EMBED) return ''
+  const s = stykuScan()
+  if (!s) return ''
+  const wKg = WeightUnits.kgFromLb(s.weightLb)
+  const lKg = WeightUnits.kgFromLb(s.leanLb)
+  return `<div class="scan-lbl lbl-s on-dim">STYKU SCAN · ${fmtDayMon(s.date)}</div>
+    <div class="scan-row">
+      <div><b>${Number(s.bf).toFixed(1)}%</b><em>BODY FAT</em></div>
+      <div><b>${wKg}<small>KG</small></b><span class="lb">${Number(s.weightLb).toFixed(1)} LB</span><em>WEIGHT</em></div>
+      <div><b>${lKg}<small>KG</small></b><span class="lb">${Number(s.leanLb).toFixed(1)} LB</span><em>LEAN MASS</em></div>
+    </div>`
 }
 
 function recapCardHTML(mode) {
@@ -1487,7 +1523,7 @@ function readyCardHTML(mode) {
     <div class="ready-card-top"><span class="lbl">READINESS</span><span class="ready-verdict">${r.verdict}</span></div>
     <div class="ready-advice">${esc(r.advice)}</div>
     <div class="ready-stats">${r.stats.map(s =>
-      `<div class="ready-stat"><span class="lbl-s">${s.lbl}</span><b>${s.val}</b><em>${esc(s.delta)}</em></div>`).join('')}</div>
+      `<div class="ready-stat"><span class="lbl-s">${s.lbl}</span><b>${s.val}</b><em>${esc(s.delta)}</em></div>`).join('')}${r.asOf ? `<div class="ready-stat"><span class="lbl-s">${fmtDayMon(r.asOf)}</span></div>` : ''}</div>
   </div>`
 }
 
@@ -1545,7 +1581,7 @@ function pillarsHTML(mode) {
         : `${plural(todaySession.total_sets || 0, 'set')}${todaySession.volume_kg ? ` · ${num(Math.round(todaySession.volume_kg))} kg` : ''}.`,
       action:'VIEW SESSION', act:'session', id: todaySession.id }
   } else if (mode.red) {
-    workout = { ...todo, label:'WORKOUT', val:'WALK', unit:'REST DAY', btn:'', act:'open-note',
+    workout = { ...todo, tag:'REST', label:'WORKOUT', val:'WALK', unit:'REST DAY', btn:'', act:'open-note',
       sub: `${[mode.ready.rhrUp >= 1 ? `RHR +${Math.round(mode.ready.rhrUp)}` : null,
         sl ? `${sl.toFixed(1)}h sleep` : 'no sleep logged'].filter(Boolean).join(' and ')}. Walk and mobility today.${planned ? ` Tell ${plannedProg && plannedProg.coach ? plannedProg.coach.split(' ')[0] : 'your coach'} before the session.` : ` Next up: ${nextPlannedTxt()}.`}`,
       action:'LOG MOBILITY' }
@@ -1558,7 +1594,7 @@ function pillarsHTML(mode) {
         : lastP ? `Last ${planned}: ${fmtDate(lastP.date)}, ${plural(lastP.total_sets || 0, 'set')}.` : `No ${planned} on record yet.`,
       action:`LOG ${planned} →`, act:'open-log', type:planned }
   } else {
-    workout = { ...todo, label:'WORKOUT', val:'REST', unit:'WALK DAY', btn:'',
+    workout = { ...todo, tag:'REST', label:'WORKOUT', val:'REST', unit:'WALK DAY', btn:'',
       sub: `No session planned. Hit the steps, or log a workout of your own. Next up: ${nextPlannedTxt()}.`,
       action:'LOG SESSION', act:'open-pick' }
   }
@@ -2267,7 +2303,15 @@ function openGoals() {
       <div><div class="field-lbl">PLAN KG/WEEK</div><input id="g-plan" class="mid-in" type="number" step="0.1" value="${goals.plan_kg_per_week || PLAN_KG_PER_WEEK}"></div>
       <div></div>
     </div>
-    <div class="modal-hint">Height and birth date are only used to size the daily calorie budget. Nothing leaves this server.</div>`,
+    <div class="two-col">
+      <div><div class="field-lbl">STYKU DATE</div><input id="g-styku-date" class="text-in" placeholder="YYYY-MM-DD" value="${esc(goals.styku_date || '')}"></div>
+      <div><div class="field-lbl">STYKU BODY FAT %</div><input id="g-styku-bf" class="mid-in" type="number" step="0.1" value="${goals.styku_bf_pct || ''}"></div>
+    </div>
+    <div class="two-col">
+      <div><div class="field-lbl">STYKU WEIGHT LB</div><input id="g-styku-lb" class="mid-in" type="number" step="0.1" value="${goals.styku_weight_lb || ''}"></div>
+      <div><div class="field-lbl">STYKU LEAN LB</div><input id="g-styku-lean" class="mid-in" type="number" step="0.1" value="${goals.styku_lean_lb || ''}"></div>
+    </div>
+    <div class="modal-hint">Height and birth date size the calorie budget. The Styku row is the latest scan, stored here, and only shown in embed mode. Nothing leaves this server.</div>`,
     ghost:'CANCEL', primary:'SAVE GOALS', primaryAct:'save-goals',
   })
   focusFirst('#g-goal')
@@ -2289,8 +2333,12 @@ async function saveGoals() {
   numField('g-steps', 'step_target')
   numField('g-sleep', 'sleep_target')
   numField('g-plan', 'plan_kg_per_week')
+  numField('g-styku-bf', 'styku_bf_pct')
+  numField('g-styku-lb', 'styku_weight_lb')
+  numField('g-styku-lean', 'styku_lean_lb')
   dateField('g-cut', 'cut_start')
   dateField('g-birth', 'birth_date')
+  dateField('g-styku-date', 'styku_date')
   if (!Object.keys(payload).length) return
   const r = await api('POST', '/api/goals', payload)
   if (r) { goals = r; applyProfile() }
