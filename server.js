@@ -489,9 +489,11 @@ app.get('/api/notes', (req, res) => {
 })
 
 app.post('/api/notes', (req, res) => {
-  const { content, category } = req.body
+  const { content, category, created_at } = req.body
   if (!content?.trim()) return res.status(400).json({ error: 'content required' })
-  const r = q(`INSERT INTO insight_notes (content, category) VALUES (?, ?)`).run([content.trim(), category || 'general'])
+  // Optional backdate (UTC 'YYYY-MM-DD HH:MM:SS'), for a note about an earlier day.
+  const at = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(created_at || '') ? created_at : null
+  const r = q(`INSERT INTO insight_notes (content, category, created_at) VALUES (?, ?, COALESCE(?, datetime('now')))`).run([content.trim(), category || 'general', at])
   res.json(q('SELECT * FROM insight_notes WHERE id = ?').get([r.lastInsertRowid]))
 })
 
@@ -507,7 +509,11 @@ const TOKENS_PATH = process.env.FLY_APP_NAME
   : path.join(__dirname, '.google-tokens.json')
 const CREDS = process.env.FLY_APP_NAME
   ? { client_id: process.env.GOOGLE_CLIENT_ID, client_secret: process.env.GOOGLE_CLIENT_SECRET, redirect_uris: [`${PUBLIC_URL}/auth/google-health/callback`] }
-  : JSON.parse(fs.readFileSync(path.join(__dirname, '.google-credentials.json'))).web
+  : (() => {
+      // Local patch: Google Health is optional, so start without credentials.
+      try { return JSON.parse(fs.readFileSync(path.join(__dirname, '.google-credentials.json'))).web }
+      catch { return { client_id: undefined, client_secret: undefined, redirect_uris: [`${PUBLIC_URL}/auth/google-health/callback`] } }
+    })()
 
 const oauth2Client = new google.auth.OAuth2(
   CREDS.client_id,

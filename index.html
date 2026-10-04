@@ -656,8 +656,10 @@ a{ color:inherit; text-decoration:none }
 // CONFIG
 // ══════════════════════════════════════════════════════════════════════════════
 
-// One colour per program type. Nothing else may use these four.
-const TYPE_COLOR = { PUSH:'#f4a800', PULL:'#2e44c8', LEGS:'#1e8a63', UPPER:'#9b5de5' }
+// One colour per program type. Nothing else may use these.
+// PT takes the purple that UPPER had; Chris's PUSH/PULL/LEGS stay only so any
+// imported history still colours correctly.
+const TYPE_COLOR = { PUSH:'#f4a800', PULL:'#2e44c8', LEGS:'#1e8a63', PT:'#9b5de5' }
 const INK = '#1a1610', PAPER = '#efe9da', CARD = '#f7f1e3', MUTED = '#6b6555'
 const RED = '#e5431e', GOLD = '#f4a800', BLUE = '#2e44c8', GREEN = '#1e8a63', AMBER = '#b87d00'
 
@@ -665,38 +667,22 @@ const RED = '#e5431e', GOLD = '#f4a800', BLUE = '#2e44c8', GREEN = '#1e8a63', AM
 const typeColor = t => TYPE_COLOR[t] || MUTED
 const typeFg = t => t === 'PUSH' ? INK : PAPER
 
+// Robert trains with an Equinox coach, who picks the exercises on the day, so the
+// one program has no fixed list. `coach` marks that: the logger asks for a session
+// note instead of prefilled sets.
 const PROGRAMS = [
-  { id:'push', short:'PUSH', name:'PUSH', exercises:[
-    { name:'Bench Press', sets:4, defaultReps:8 },
-    { name:'Overhead Press', sets:3, defaultReps:6 },
-    { name:'Chest Fly Machine', sets:3, defaultReps:12 },
-    { name:'Lateral Raise', sets:4, defaultReps:12 },
-    { name:'Tricep Pushdown', sets:3, defaultReps:12 },
-  ]},
-  { id:'pull', short:'PULL', name:'PULL', exercises:[
-    { name:'Lat Pulldown', sets:3, defaultReps:12 },
-    { name:'Long Pull', sets:3, defaultReps:12 },
-    { name:'Dumbbell Row', sets:3, defaultReps:10 },
-    { name:'Facepulls', sets:3, defaultReps:15 },
-    { name:'Bicep Curls Incline Bench', sets:3, defaultReps:12 },
-    { name:'Hammer Curls Incline Bench', sets:3, defaultReps:10 },
-  ]},
-  { id:'legs', short:'LEGS', name:'LEGS', exercises:[
-    { name:'Leg Curl', sets:3, defaultReps:12 },
-    { name:'Leg Extension', sets:3, defaultReps:12 },
-    { name:'Angled Leg Press', sets:3, defaultReps:10 },
-    { name:'Calf Raises on Leg Press', sets:3, defaultReps:15 },
-    { name:'Dumbbell Romanian Deadlift', sets:3, defaultReps:12 },
-    { name:'Hip Abduction Machine', sets:3, defaultReps:15 },
-    { name:'Ab Crunch Machine', sets:3, defaultReps:12 },
-  ]},
+  { id:'pt', short:'PT', name:'PT · TYE', coach:'Tye Castle', place:'Equinox', time:'8 AM', exercises:[] },
 ]
 
 // Day of week → planned session type (0=Sun … 6=Sat), null being a rest/steps day.
-// Edit this and PROGRAMS above to match your own split.
-const ROUTINE = { 0:null, 1:'PUSH', 2:'PULL', 3:null, 4:'LEGS', 5:'UPPER', 6:null }
-const CORE = ['PUSH', 'PULL', 'LEGS']
-const LIFT_TYPES = ['PUSH', 'PULL', 'LEGS', 'UPPER']
+// Edit this and PROGRAMS above to match your own split. Nothing is planned before
+// ROUTINE_START, so days before the schedule began never show as missed.
+const ROUTINE = { 0:null, 1:'PT', 2:null, 3:null, 4:'PT', 5:null, 6:null }
+const ROUTINE_START = '2026-10-05'
+const LIFT_TYPES = ['PT', 'PUSH', 'PULL', 'LEGS', 'UPPER']
+const PER_WEEK = Object.values(ROUTINE).filter(Boolean).length
+const plannedOn = iso => iso >= ROUTINE_START ? ROUTINE[asDate(iso).getDay()] : null
+const programOf = t => PROGRAMS.find(p => p.short === t) || null
 
 const ETA_MAX_DAYS = 550                  // past ~18 months a projection is not a plan
 // These three carry a sensible default and are overridden by the profile on load.
@@ -731,9 +717,9 @@ const EVENING_HOUR = 18
 const BUMP_KG = 0.5                       // a weigh-in up this much shows the why card
 const CAT_COLOR = {
   nutrition:[GREEN, PAPER], recovery:[BLUE, PAPER], training:[GOLD, INK],
-  mindset:[RED, PAPER], habits:[INK, PAPER], general:[MUTED, PAPER],
+  mindset:[RED, PAPER], habits:[INK, PAPER], body:[RED, PAPER], general:[MUTED, PAPER],
 }
-const CAT_ORDER = ['nutrition', 'recovery', 'training', 'mindset', 'habits', 'general']
+const CAT_ORDER = ['body', 'nutrition', 'recovery', 'training', 'mindset', 'habits', 'general']
 const catOf = n => n.category || 'general'
 // Categories are whatever the notes actually carry, in a fixed order where known.
 function noteCats() {
@@ -827,6 +813,7 @@ function typeOf(s) {
   if (t.includes('PULL')) return 'PULL'
   if (t.includes('LEG')) return 'LEGS'
   if (t.includes('UPPER')) return 'UPPER'
+  if (/^PT\b|PERSONAL TRAIN/.test(t)) return 'PT'
   if (t.includes('CARDIO')) return 'CARDIO'
   if (t.includes('RUN')) return 'CARDIO'
   return t.split(/[·\s]/)[0] || 'SESSION'
@@ -857,14 +844,24 @@ const realRuns = () => runs.filter(r => !isWalk(r))
 const is5k = r => r.distance_km >= 4.8 && r.distance_km <= 5.2 && r.duration_sec
 const fastest5k = list => list.filter(is5k).reduce((a, r) => (!a || r.duration_sec < a.duration_sec) ? r : a, null)
 
-// Rotation: the least-recently-trained of the core three, skipping anything trained
-// in the last 48h.
-function nextRotationType() {
-  const last = {}
-  sessions.forEach(s => { const t = typeOf(s); if (CORE.includes(t) && (!last[t] || s.date > last[t])) last[t] = s.date })
-  const yesterday = addDays(localIso(), -1)
-  const ranked = CORE.slice().sort((a,b) => (last[a] || '0000').localeCompare(last[b] || '0000'))
-  return ranked.find(t => !last[t] || last[t] < yesterday) || ranked[0]
+// The next planned session from today on that isn't logged yet, read off ROUTINE.
+function nextPlanned() {
+  const today = localIso()
+  const logged = new Set(sessions.map(s => s.date))
+  for (let i = 0; i < 21; i++) {
+    const iso = addDays(today, i)
+    const t = plannedOn(iso)
+    if (t && !logged.has(iso)) return { type:t, date:iso, today: i === 0 }
+  }
+  return null
+}
+function nextRotationType() { return (nextPlanned() || {}).type || PROGRAMS[0].short }
+// "PT MON 5 OCT · 8 AM", or "PT TODAY · 8 AM".
+function nextPlannedTxt() {
+  const n = nextPlanned()
+  if (!n) return 'NOTHING PLANNED'
+  const p = programOf(n.type)
+  return `${n.type} ${n.today ? 'TODAY' : fmtDate(n.date)}${p && p.time ? ` · ${p.time}` : ''}`
 }
 function lastSessionOfType(t) {
   return sessions.filter(s => typeOf(s) === t).sort((a,b) => a.date < b.date ? 1 : -1)[0] || null
@@ -916,8 +913,22 @@ function projection() {
   return { weekly, days, etaMs: asDate(localIso()).getTime() + days * 86400000 }
 }
 
+// On track: losing at least ~90% of the planned rate, or already within 1 kg of the
+// goal and not gaining. One verdict for the hero, the evening card and the cut card.
+const PACE_TOLERANCE = 0.9
+const NEAR_GOAL_KG = 1
+function paceVerdict(weekly, w = (todayData.bodyWeight || {}).weight_kg) {
+  if (weekly == null) return 'NO TREND YET'
+  const toGo = goals.bw_goal && w ? w - goals.bw_goal : null
+  if (toGo != null && toGo <= 0) return 'AT GOAL'
+  if (weekly <= -PLAN_KG_PER_WEEK * PACE_TOLERANCE) return 'ON TRACK'
+  if (toGo != null && toGo <= NEAR_GOAL_KG && weekly < 0.05) return 'ON TRACK'
+  return 'BELOW TARGET'
+}
+
 // Energy budget: Mifflin St Jeor BMR, a sedentary multiplier, plus the real cost of
-// the day's steps. 1 kg of fat is 7700 kcal, so 1 kg/week is a 1100 kcal daily deficit.
+// the day's steps. 1 kg of fat is 7700 kcal, so 1 kg/week is a 1100 kcal daily deficit
+// and 0.5 kg/week is 550.
 const KCAL_PER_KG_FAT = 7700
 const KCAL_PER_1K_STEPS = 43
 const SEDENTARY = 1.15
@@ -946,12 +957,14 @@ function energy() {
       return sum + Math.max(0, byHR - counted)
     }, 0))
   const burn = s => bmr*SEDENTARY + (s/1000)*KCAL_PER_1K_STEPS + hrBonus
-  const deficit = KCAL_PER_KG_FAT / 7
+  // The deficit follows the profile's planned rate (goals.plan_kg_per_week), 1 kg/week if unset.
+  const rate = +goals.plan_kg_per_week || 1
+  const deficit = KCAL_PER_KG_FAT * rate / 7
   const FLOOR = 1600
   const eatToday = Math.max(FLOOR, Math.round(burn(steps) - deficit))
-  const eatAt10k = Math.max(FLOOR, Math.round(burn(STEP_TARGET) - deficit))
+  const eatAtTarget = Math.max(FLOOR, Math.round(burn(STEP_TARGET) - deficit))
   const left = eatToday - eaten
-  return { eatToday, walkWorth: Math.max(0, eatAt10k - eatToday), eaten, left, steps, over: left < 0, ok:true }
+  return { eatToday, eatAtTarget, walkWorth: Math.max(0, eatAtTarget - eatToday), eaten, left, steps, over: left < 0, ok:true }
 }
 
 // Readiness: unchanged rules. RHR against a 7-day baseline, HRV against 75% of it,
@@ -1164,7 +1177,7 @@ function heroHTML(mode) {
   const weekly = proj.weekly
   const velTxt = weekly == null ? '— KG/WK'
     : `${weekly < 0 ? '↓' : weekly > 0 ? '↑' : '='} ${Math.abs(weekly).toFixed(1)} KG/WK`
-  const trackTxt = weekly == null ? 'NO TREND YET' : weekly <= -0.8 ? 'ON TRACK' : 'BELOW TARGET'
+  const trackTxt = paceVerdict(weekly, w)
   const etaMs = proj.etaMs
   const cutStart = cutStartDate()
   const day = daysBetween(cutStart, localIso()) + 1
@@ -1241,8 +1254,11 @@ function eveningHTML(mode) {
       text: `Three of four done. Log what you ate and today is 4/4, taking the streak to ${plural(streak+1, 'day')}.` },
     sleep: { big: '—', unit: 'HRS<br>LOGGED', act:'EDIT HOURS', on:'open-sleep',
       text: `Three of four done. Last night has no hours against it, so today sits at 3/4. Fill it in and the streak goes to ${plural(streak+1, 'day')}.` },
-    workout: { big: nextRotationType(), unit: 'STILL<br>OPEN', act:'START SESSION', on:'open-pick',
-      text: `Three of four done. One session left and today is 4/4, taking the streak to ${plural(streak+1, 'day')}.` },
+    workout: plannedOn(mode.today)
+      ? { big: plannedOn(mode.today), unit: 'STILL<br>OPEN', act:'LOG SESSION', on:'open-pick',
+          text: `Three of four done. Log today's ${plannedOn(mode.today)} session and today is 4/4, taking the streak to ${plural(streak+1, 'day')}.` }
+      : { big: 'REST', unit: 'NO SESSION<br>PLANNED', act:'LOG SESSION', on:'open-pick',
+          text: `Three of four done. No session is planned today; a workout of your own would make it 4/4. Next up: ${nextPlannedTxt()}.` },
   }[missing]
   const stats = [
     { lbl:'TODAY', val:`${mode.score}/4` },
@@ -1250,7 +1266,7 @@ function eveningHTML(mode) {
     { lbl:'KCAL LEFT', val: num(Math.max(0, en.left)) },
   ]
   const velTxt = vel ? `${vel.weekly < 0 ? '↓' : '↑'} ${Math.abs(vel.weekly).toFixed(1)} KG/WK` : 'NO TREND YET'
-  const track = vel && vel.weekly <= -0.8 ? 'ON TRACK' : 'BELOW TARGET'
+  const track = paceVerdict(vel ? vel.weekly : null)
   return `<div class="evening">
     <div class="evening-top">
       <span>TONIGHT · ${new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</span>
@@ -1303,7 +1319,7 @@ function recapCardHTML(mode) {
   const lost = a != null && b != null ? a - b : null
   const stats = [
     { lbl:'KG LOST', val: lost == null ? '—' : `${lost >= 0 ? '−' : '+'}${fmtKg(Math.abs(lost))}` },
-    { lbl:'SESSIONS', val: `${sessions.filter(s => days.includes(s.date)).length} / 4` },
+    { lbl:'SESSIONS', val: `${sessions.filter(s => days.includes(s.date)).length} / ${PER_WEEK}` },
     { lbl:'DAYS AT 4/4', val: `${days.filter(d => dayScore(m[d]) === 4).length} / 7` },
     { lbl:'FOOD ON PLAN', val: `${days.filter(d => m[d] && m[d].diet_ok).length} / 7` },
   ]
@@ -1316,7 +1332,7 @@ function recapCardHTML(mode) {
     </div>
     <div class="recap-stats">${stats.map(s =>
       `<div><div class="lbl-s on-dim">${s.lbl}</div><div class="recap-val">${s.val}</div></div>`).join('')}</div>
-    <div class="recap-foot">WEEK ${wk+1} OPENS WITH ${nextRotationType()}.${reconnect}</div>
+    <div class="recap-foot">NEXT UP: ${nextPlannedTxt()}.${reconnect}</div>
   </div>`
 }
 
@@ -1343,8 +1359,6 @@ function pillarsHTML(mode) {
   const sl = todayData.todaySleepHours || 0
   const today = mode.today
   const todaySession = sessions.find(s => s.date === today)
-  const nextType = nextRotationType()
-  const lastNext = lastSessionOfType(nextType)
   const fbDown = syncFitbit.ok === false
 
   const done = (c, fg) => ({ cls:'done', c, fg, tag:'✓ DONE' })
@@ -1372,7 +1386,7 @@ function pillarsHTML(mode) {
   // STEPS
   const stepsDone = en.steps >= STEP_TARGET
   const steps = { ...(stepsDone ? done(GOLD, INK) : todo), label:'STEPS',
-    val: en.steps ? num(en.steps) : '—', unit:'/ 10K', action:'+ ADD STEPS', act:'open-steps',
+    val: en.steps ? num(en.steps) : '—', unit:`/ ${fmtKg(STEP_TARGET / 1000)}K`, action:'+ ADD STEPS', act:'open-steps',
     bar: clampPct(en.steps / STEP_TARGET * 100),
     sub: fbDown ? 'Waiting on Fitbit.'
       : stepsDone ? `Target hit. Today's budget is ${num(en.eatToday)} kcal.`
@@ -1380,23 +1394,36 @@ function pillarsHTML(mode) {
   if (fbDown && !en.steps) { steps.val = '—'; steps.bar = null }
 
   // WORKOUT
+  // Coach-led sessions (PT) carry no sets, so the tile describes the session, not volume.
+  const planned = plannedOn(today)
+  const plannedProg = planned ? programOf(planned) : null
   let workout
   if (todaySession) {
     const t = typeOf(todaySession)
     const time = fmtTime(todaySession.ended_at) || fmtTime(todaySession.created_at)
+    const p = programOf(t)
     workout = { ...done(INK, PAPER), label:'WORKOUT', val:t, unit: time || 'TODAY',
-      sub: `${plural(todaySession.total_sets || 0, 'set')}${todaySession.volume_kg ? ` · ${num(Math.round(todaySession.volume_kg))} kg` : ''}. Logged from Notes.`,
+      sub: p && p.coach && !todaySession.total_sets
+        ? `${p.place} session with ${p.coach.split(' ')[0]}.${todaySession.note ? ` ${todaySession.note}` : ''}`
+        : `${plural(todaySession.total_sets || 0, 'set')}${todaySession.volume_kg ? ` · ${num(Math.round(todaySession.volume_kg))} kg` : ''}.`,
       action:'VIEW SESSION', act:'session', id: todaySession.id }
   } else if (mode.red) {
     workout = { ...todo, label:'WORKOUT', val:'WALK', unit:'REST DAY', btn:'', act:'open-note',
       sub: `${[mode.ready.rhrUp >= 1 ? `RHR +${Math.round(mode.ready.rhrUp)}` : null,
-        sl ? `${sl.toFixed(1)}h sleep` : 'no sleep logged'].filter(Boolean).join(' and ')}. Walk and mobility today, ${nextType} tomorrow.`,
+        sl ? `${sl.toFixed(1)}h sleep` : 'no sleep logged'].filter(Boolean).join(' and ')}. Walk and mobility today.${planned ? ` Tell ${plannedProg && plannedProg.coach ? plannedProg.coach.split(' ')[0] : 'your coach'} before the session.` : ` Next up: ${nextPlannedTxt()}.`}`,
       action:'LOG MOBILITY' }
+  } else if (planned) {
+    const p = plannedProg || {}
+    const lastP = lastSessionOfType(planned)
+    workout = { ...todo, label:'WORKOUT', val:planned, unit: p.time || 'TODAY', btn:'cta',
+      sub: p.coach
+        ? `${p.place} personal training with ${p.coach.split(' ')[0]}, who picks the exercises.${lastP ? ` Last: ${fmtDate(lastP.date)}.` : ''}`
+        : lastP ? `Last ${planned}: ${fmtDate(lastP.date)}, ${plural(lastP.total_sets || 0, 'set')}.` : `No ${planned} on record yet.`,
+      action:`LOG ${planned} →`, act:'open-log', type:planned }
   } else {
-    workout = { ...todo, label:'WORKOUT', val:nextType, unit:'NEXT', btn:'cta',
-      sub: lastNext ? `Last ${nextType}: ${fmtDate(lastNext.date)}, ${plural(lastNext.total_sets || 0, 'set')}.`
-        : `No ${nextType} on record yet.`,
-      action:`START ${nextType} →`, act:'open-log', type:nextType }
+    workout = { ...todo, label:'WORKOUT', val:'REST', unit:'WALK DAY', btn:'',
+      sub: `No session planned. Hit the steps, or log a workout of your own. Next up: ${nextPlannedTxt()}.`,
+      action:'LOG SESSION', act:'open-pick' }
   }
 
   const list = [sleep, food, steps, workout]
@@ -1436,12 +1463,11 @@ function weekStripHTML() {
   const monday = addDays(today, -((new Date(today + 'T12:00:00').getDay() + 6) % 7))
   const DAYN = ['MON','TUE','WED','THU','FRI','SAT','SUN']
   const byDate = {}; sessions.forEach(s => { if (!byDate[s.date]) byDate[s.date] = s })
-  const nextType = nextRotationType()
   let done = 0
 
   const cells = Array.from({ length:7 }, (_, i) => {
     const iso = addDays(monday, i)
-    const planned = ROUTINE[(i+1) % 7]
+    const planned = plannedOn(iso)
     const s = byDate[iso]
     const walk = runs.find(r => r.date === iso && isWalk(r))
     const isToday = iso === today, future = iso > today
@@ -1449,8 +1475,8 @@ function weekStripHTML() {
     if (s) {
       const t = typeOf(s); done++
       chip = `${t} ✓`; chipBg = typeColor(t); chipFg = typeFg(t); chipBorder = typeColor(t)
-    } else if (isToday) {
-      chip = `NEXT: ${nextType}`; chipBg = GOLD; chipFg = INK; chipBorder = GOLD
+    } else if (isToday && planned) {
+      chip = `${planned} TODAY`; chipBg = GOLD; chipFg = INK; chipBorder = GOLD
     } else if (planned && future) {
       chip = planned; chipBorder = typeColor(planned); chipStyle = 'dashed'
     } else if (!planned) {
@@ -1523,7 +1549,8 @@ function yearGridHTML() {
   }
   const year = sessions.filter(s => s.date >= YEAR_START)
   const other = year.filter(s => !isLift(s)).length
-  const legend = ['PUSH','PULL','LEGS','UPPER'].map(t =>
+  const shownTypes = Object.keys(TYPE_COLOR).filter(t => t === 'PT' || year.some(s => typeOf(s) === t))
+  const legend = shownTypes.map(t =>
     `<div class="grid-legend-row"><span class="grid-legend-sw" style="--c:${TYPE_COLOR[t]}"></span><span>${t}</span><b>${year.filter(s => typeOf(s) === t).length}</b></div>`).join('')
     + (other ? `<div class="grid-legend-row"><span class="grid-legend-sw" style="--c:${MUTED}"></span><span>CARDIO</span><b>${other}</b></div>` : '')
   return `<div class="grid-card">
@@ -1658,7 +1685,7 @@ function paceChartHTML() {
   const weekly = proj.weekly
   const nowMs = asDate(localIso()).getTime()
   const etaMs = proj.etaMs
-  const tEnd = Math.max(planEnd, etaMs || 0) + 10*DAY
+  const tEnd = Math.max(planEnd, etaMs || 0, nowMs) + 10*DAY
 
   const maxKg = Math.max(start, ...hist.map(h => h.weight_kg))
   const yTop = Math.ceil(maxKg) + 1, yBot = goal - 1
@@ -1672,7 +1699,8 @@ function paceChartHTML() {
   for (let d = new Date(m0); d.getTime() <= tEnd; d.setMonth(d.getMonth() + 1)) {
     months.push({ x: X(d.getTime()), label: MONTHS[d.getMonth()] })
   }
-  const planNow = start - (nowMs - t0) / DAY / 7 * PLAN_KG_PER_WEEK
+  // The plan stops at the goal: once its date has passed, the target is the goal itself.
+  const planNow = Math.max(goal, start - (nowMs - t0) / DAY / 7 * PLAN_KG_PER_WEEK)
   const ahead = planNow - w
   const actual = hist.map(p => `${X(asDate(p.date).getTime()).toFixed(1)},${Y(p.weight_kg).toFixed(1)}`).join(' ')
   const goalY = Y(goal), lblY = goalY - 14
@@ -1701,7 +1729,7 @@ function paceChartHTML() {
         ${ticks.map(kg => `<line x1="20" x2="1180" y1="${Y(kg).toFixed(1)}" y2="${Y(kg).toFixed(1)}" stroke="#ddd5c2" stroke-width="1.5"></line>
           <text x="1190" y="${(Y(kg)+4).toFixed(1)}" font-family="Archivo,sans-serif" font-weight="800" font-size="12" fill="${MUTED}">${kg}</text>`).join('')}
         ${months.map(m => `<text x="${m.x.toFixed(1)}" y="236" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="800" font-size="12" letter-spacing="1" fill="${MUTED}">${m.label}</text>`).join('')}
-        <polyline points="${X(t0).toFixed(1)},${Y(start).toFixed(1)} ${X(planEnd).toFixed(1)},${goalY.toFixed(1)}" fill="none" stroke="${INK}" stroke-width="2" stroke-dasharray="8 6"></polyline>
+        <polyline points="${X(t0).toFixed(1)},${Y(start).toFixed(1)} ${X(planEnd).toFixed(1)},${goalY.toFixed(1)} ${X(tEnd).toFixed(1)},${goalY.toFixed(1)}" fill="none" stroke="${INK}" stroke-width="2" stroke-dasharray="8 6"></polyline>
         ${etaMs ? `<polyline points="${X(nowMs).toFixed(1)},${Y(w).toFixed(1)} ${X(etaMs).toFixed(1)},${goalY.toFixed(1)}" fill="none" stroke="${RED}" stroke-width="3" stroke-dasharray="2 6" stroke-linecap="round"></polyline>` : ''}
         <polyline points="${actual}" fill="none" stroke="${RED}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"></polyline>
         <circle cx="${X(nowMs).toFixed(1)}" cy="${Y(w).toFixed(1)}" r="7" fill="${RED}" stroke="${INK}" stroke-width="2"></circle>
@@ -2171,7 +2199,7 @@ function openPick() {
         <div class="prog-body">
           <div>
             <div class="prog-name">${esc(p.name)}</div>
-            <div class="prog-meta">${p.exercises.length} EXERCISES · LAST ${last ? fmtDate(last.date) : '—'}</div>
+            <div class="prog-meta">${p.coach ? `${esc(p.place.toUpperCase())} · COACH PICKS` : `${p.exercises.length} EXERCISES`} · LAST ${last ? fmtDate(last.date) : '—'}</div>
           </div>
           <div class="prog-right">
             ${p.short === nextType ? '<span class="prog-next">NEXT UP</span>' : ''}
@@ -2229,6 +2257,19 @@ async function openLog(type) {
     }
   })
 
+  if (prog.coach) {
+    modalRoot().innerHTML = shell({
+      title: prog.name, wide:true, spine: typeColor(type),
+      sub: `${prog.place.toUpperCase()} · ${prog.coach.toUpperCase()} · READINESS ${ready.verdict}`,
+      body: `<div class="modal-hint">${esc(prog.coach.split(' ')[0])} picks the exercises, so there are no fixed sets. Note what you did and how it felt.</div>
+      <div class="log-sess-note">
+        <div class="lbl-s">SESSION NOTE</div>
+        <input id="in-sess-note" placeholder="What did you work on?">
+      </div>`,
+      ghost:'← BACK', ghostAct:'open-pick', primary:'FINISH SESSION', primaryAct:'save-session',
+    })
+    return
+  }
   modalRoot().innerHTML = shell({
     title: prog.name, wide:true, spine: typeColor(type),
     sub: `READINESS ${ready.verdict} · ${progressionOn ? 'PROGRESSION ON' : 'HOLD WEIGHTS'} · ${prog.exercises.length} EXERCISES`,
