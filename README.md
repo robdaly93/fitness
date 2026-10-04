@@ -163,6 +163,24 @@ To let the hub frame this host, set `FRAME_ANCESTORS` to the hub origin
 blocks every other origin. Every response also sends
 `X-Content-Type-Options: nosniff`.
 
+`HUB_ORIGIN` is the one origin embed mode may talk to. Set it to the same hub
+origin you allow in `FRAME_ANCESTORS` (that list can name more than one
+source; this value is exactly one):
+
+```bash
+FRAME_ANCESTORS=https://hub.example.com
+HUB_ORIGIN=https://hub.example.com
+```
+
+It must be a bare `https` origin, or `http://localhost` / `http://127.0.0.1`
+with an optional port for local dev. No path, query, hash, or trailing slash.
+`GET /api/config` returns `{ "hubOrigin": "https://hub.example.com" }`, or
+`{ "hubOrigin": null }` when the variable is unset or invalid. The page posts
+`fitlog:height` to that origin and accepts `fitlog:tab` only from it. It never
+uses `*` and never uses fitlog's own origin. If the value is missing, invalid,
+or equal to this page's origin, the page posts nothing and ignores parent
+messages.
+
 `POST /api/dev/sync-prod`, `GET /api/health/raw`, `POST /api/fitbit/sync` and
 `POST /api/withings/sync` answer 404 unless `FITLOG_DEBUG=1`. The four-hour
 Fitbit refresh calls the sync function in process, so it does not need the
@@ -184,6 +202,7 @@ proxy with basic auth. Do not skip this and then connect your scale to it.
 | `FITLOG_TZ` | `Asia/Dubai` | Timezone for "today" |
 | `PUBLIC_URL` | derived | Origin only, for OAuth callbacks. Root custom domain, no `/fitlog` path |
 | `FRAME_ANCESTORS` | `'self'` | CSP `frame-ancestors` source list. Set to the hub origin so the hub can frame this host |
+| `HUB_ORIGIN` | unset | Bare hub origin for embed `postMessage` (`fitlog:height` out, `fitlog:tab` in). `https://host` or `http://localhost[:port]` |
 | `FITLOG_DEBUG` | unset | `1` enables `/api/dev/*`, `/api/health/raw`, and the manual sync POSTs |
 | `FLY_APP` | from `fly.toml` | Target app for the dev prod-DB pull |
 | `GOOGLE_CLIENT_ID` / `_SECRET` | - | Google Health OAuth, production only |
@@ -210,6 +229,7 @@ POST /api/fitbit/sync?days=N       pull steps, sleep, workouts, RHR, HRV (FITLOG
 GET  /api/health/raw               raw Health API response (FITLOG_DEBUG=1)
 POST /api/dev/sync-prod            replace the local db from prod (FITLOG_DEBUG=1, not on Fly)
 GET  /api/fitbit/status /api/withings/status
+GET  /api/config                    `{ hubOrigin }` for embed postMessage, or null
 ```
 
 `POST /api/log` is the one worth knowing:

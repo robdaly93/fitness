@@ -749,6 +749,7 @@ html.embed .fit-banner p span{ color:var(--muted); font-weight:600 }
   <nav class="bottom-nav" id="bottom-nav"><div class="bottom-nav-inner"></div></nav>
 </div>
 <script src="weight-units.js"></script>
+<script src="hub-origin.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════════════════════
 // CONFIG
@@ -836,12 +837,22 @@ const withBase = u => u.startsWith('/') ? BASE + u : u
 // ?embed=1 hides FITLOG's own chrome; the host drives tabs through the hash (#goals).
 const EMBED = new URLSearchParams(location.search).get('embed') === '1'
 document.documentElement.classList.toggle('embed', EMBED)
-// Framed by the hub: report the content height to the parent (same origin only).
+// Framed by the hub. Messages go to HUB_ORIGIN only, never '*' and never this origin.
 const IN_FRAME = EMBED && window.parent !== window
+let HUB_ORIGIN = null
+function parentTarget() {
+  return HubOrigin.messageTarget(HUB_ORIGIN, location.origin)
+}
 function postHeight() {
-  if (!IN_FRAME) return
+  const target = parentTarget()
+  if (!IN_FRAME || !target) return
   const height = Math.ceil(document.querySelector('.app').getBoundingClientRect().height)
-  window.parent.postMessage({ type:'fitlog:height', height }, location.origin)
+  window.parent.postMessage({ type:'fitlog:height', height }, target)
+}
+async function loadHubOrigin() {
+  if (!EMBED) return
+  const cfg = await api('GET', '/api/config')
+  HUB_ORIGIN = cfg && typeof cfg.hubOrigin === 'string' ? cfg.hubOrigin : null
 }
 // Embed hides SLEEP and STEPS while Fitbit is down; today's score counts the other two.
 const fbHidden = () => EMBED && syncFitbit.ok === false
@@ -2735,18 +2746,21 @@ async function reload(keys) {
 }
 
 async function init() {
+  await loadHubOrigin()
   await Promise.all(Object.values(LOADERS).map(fn => fn()))
   // Embed: ?tab= picks the opening tab and wins over the hash.
   const qTab = EMBED && new URLSearchParams(location.search).get('tab')
   if (TABS.includes(qTab)) setTab(qTab, false)
   else handleHash()
-  if (IN_FRAME) new ResizeObserver(postHeight).observe(document.querySelector('.app'))
+  if (IN_FRAME && parentTarget()) new ResizeObserver(postHeight).observe(document.querySelector('.app'))
 }
 
-// Embed: the hub switches tabs with postMessage({ type:'fitlog:tab', tab }), same origin only.
-// replaceState keeps the hash in step without adding to the parent's back history.
+// Embed: the hub switches tabs with postMessage({ type:'fitlog:tab', tab }).
+// The sender must be HUB_ORIGIN. replaceState keeps the hash in step without
+// adding to the parent's back history.
 if (EMBED) window.addEventListener('message', e => {
-  if (e.origin !== location.origin || !e.data || e.data.type !== 'fitlog:tab' || !TABS.includes(e.data.tab)) return
+  const target = parentTarget()
+  if (!target || e.origin !== target || !e.data || e.data.type !== 'fitlog:tab' || !TABS.includes(e.data.tab)) return
   const next = e.data.tab
   setTab(next, false)
   history.replaceState(null, '', next === 'today' ? '#' : `#${next}`)

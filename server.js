@@ -5,6 +5,7 @@ const path = require('path')
 const fs = require('fs')
 const { execSync, spawn } = require('child_process')
 const { publicOrigin, frameAncestorsDirective, debugEnabled } = require('./http-guard')
+const { hubOrigin } = require('./hub-origin')
 const PORT = process.env.PORT || 7779
 // The Fly app this install deploys to, read from fly.toml so a fork changes one
 // config line and nothing in the code.
@@ -153,6 +154,11 @@ function authPage(title, message, retry) {
 function sendAuth(res, status, title, message, retry) {
   res.status(status).type('html').send(authPage(title, message, retry))
 }
+
+// Embed postMessage target. Invalid or unset HUB_ORIGIN is null, never echoed raw.
+app.get('/api/config', (req, res) => {
+  res.json({ hubOrigin: hubOrigin(process.env.HUB_ORIGIN) })
+})
 
 // node-sqlite3-wasm requires an array for multiple bind params
 const q = (sql) => db.prepare(sql)
