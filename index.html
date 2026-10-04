@@ -699,7 +699,7 @@ html.embed .hero-vel.v3 .lb{ margin:0; font-size:12px; font-weight:700; color:va
 html.embed .score-card{ overflow:visible }
 html.embed .scan-lbl{ margin-top:18px; padding-top:14px; border-top:2px solid rgba(239,233,218,0.25) }
 html.embed .scan-row{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:10px }
-html.embed .scan-row b{ display:block; font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:36px; line-height:0.85 }
+html.embed .scan-row b{ display:block; font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:36px; line-height:0.85; color:var(--gold) }
 html.embed .scan-row b small{ font-size:0.45em; margin-left:4px; letter-spacing:0.02em }
 html.embed .scan-row em{ display:block; font-style:normal; font-weight:800; font-size:12px; letter-spacing:0.1em; color:var(--on-ink-dim); margin-top:4px }
 html.embed .scan-row .lb{ color:var(--on-ink-dim); font-size:12px; font-weight:700; margin-top:4px }
@@ -707,17 +707,36 @@ html.embed .cut-val-col{ display:flex; flex-direction:column; align-items:flex-s
 html.embed .cut-val-col .lb,
 html.embed .cut-target .lb{ font-size:12px; font-weight:800; margin-top:6px }
 html.embed .recap-val .lb{ font-size:13px; font-weight:800; margin-top:4px }
+/* The hub frame supplies the gutters, so embed pages sit flush at every width. */
+html.embed #view-today,
+html.embed #view-training,
+html.embed #view-goals,
+html.embed #view-notes{ padding-left:0; padding-right:0 }
 html.embed .pillars.two{ grid-template-columns:repeat(2,minmax(0,1fr)) }
+html.embed .pillar,
+html.embed .fit-banner,
+html.embed .today-row1{ min-width:0 }
 html.embed .fit-banner{ margin-top:16px; border:3px dashed var(--muted); padding:14px 20px;
   display:flex; align-items:center; justify-content:space-between; gap:16px }
 html.embed .fit-banner p{ font-weight:600; font-size:14px; color:var(--ink); margin:0 }
 html.embed .fit-banner p b{ font-weight:800; letter-spacing:0.12em; font-size:12px; margin-right:10px }
 html.embed .fit-banner p span{ color:var(--muted); font-weight:600 }
 @media (max-width:768px){
+  html.embed, html.embed body, html.embed .app{ height:auto; min-height:0 }
   html.embed .fit-banner{ flex-direction:column; align-items:stretch }
   html.embed .fit-banner .btn-red{ text-align:center }
   html.embed .fit-banner p b{ display:block; margin:0 0 4px }
-  html.embed .pillars.two{ grid-template-columns:1fr 1fr }
+  html.embed .pillars,
+  html.embed .pillars.two{ grid-template-columns:repeat(2,minmax(0,1fr)) }
+}
+@media (max-width:480px){
+  html.embed #view-today,
+  html.embed #view-training,
+  html.embed #view-goals,
+  html.embed #view-notes{ padding-left:0; padding-right:0 }
+  html.embed .pillars,
+  html.embed .pillars.two{ grid-template-columns:repeat(2,minmax(0,1fr)) }
+  html.embed .pillar{ min-width:0 }
 }
 </style>
 </head>
@@ -846,8 +865,14 @@ function parentTarget() {
 function postHeight() {
   const target = parentTarget()
   if (!IN_FRAME || !target) return
-  const height = Math.ceil(document.querySelector('.app').getBoundingClientRect().height)
+  const app = document.querySelector('.app')
+  const height = Math.ceil(Math.max(app.offsetHeight, app.scrollHeight))
   window.parent.postMessage({ type:'fitlog:height', height }, target)
+}
+function watchEmbedHeight() {
+  if (!EMBED) return
+  new ResizeObserver(() => postHeight()).observe(document.body)
+  window.addEventListener('resize', postHeight)
 }
 async function loadHubOrigin() {
   if (!EMBED) return
@@ -2698,6 +2723,7 @@ function setTab(t, pushHash = true) {
   render()
   document.getElementById(`view-${tab}`).scrollTop = 0
   window.scrollTo(0, 0)
+  postHeight()
 }
 
 function handleHash() {
@@ -2752,7 +2778,8 @@ async function init() {
   const qTab = EMBED && new URLSearchParams(location.search).get('tab')
   if (TABS.includes(qTab)) setTab(qTab, false)
   else handleHash()
-  if (IN_FRAME && parentTarget()) new ResizeObserver(postHeight).observe(document.querySelector('.app'))
+  watchEmbedHeight()
+  postHeight()
 }
 
 // Embed: the hub switches tabs with postMessage({ type:'fitlog:tab', tab }).
