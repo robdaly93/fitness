@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "test": "node --test --test-concurrency=1",
     "dev": "node --watch server.js",
     "proxy": "flyctl proxy 7779:8080"
   },

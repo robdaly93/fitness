@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FITLOG</title>
-<link rel="icon" href="/favicon.svg">
+<link rel="icon" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Archivo:ital,wght@0,500;0,600;0,700;0,800;1,500&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" rel="stylesheet">
@@ -43,6 +43,11 @@ a{ color:inherit; text-decoration:none }
 
 /* ══ shell ══ */
 .app{ height:100vh; display:flex; flex-direction:column; overflow:hidden; position:relative }
+/* ?embed=1: the host page (robert-hub) supplies the header and tabs. */
+.embed .hdr,.embed .bottom-nav{ display:none !important }
+/* …and the document scrolls at its content height, so the host can size the iframe. */
+html.embed,.embed body{ height:auto; overflow:visible }
+.embed .app{ height:auto; min-height:0; overflow:visible }
 
 /* ══ header ══ */
 .hdr{ display:grid; grid-template-columns:auto 1fr auto; align-items:stretch;
@@ -224,6 +229,8 @@ a{ color:inherit; text-decoration:none }
 .pillar.done .pillar-btn{ background:transparent; color:var(--fg); border-color:var(--fg) }
 .pillar-btn.cta{ background:var(--red); color:var(--paper); border-color:var(--ink) }
 .pillar-btn.warn{ background:var(--red); color:var(--paper); border-color:var(--ink) }
+.pillar-off{ grid-column:span 2; border:2px dashed var(--ink); color:var(--muted); padding:18px 20px;
+  display:flex; align-items:center; justify-content:center; text-align:center }
 
 /* ══ training: week strip ══ */
 .week{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:12px }
@@ -557,6 +564,7 @@ a{ color:inherit; text-decoration:none }
   #view-training,#view-goals,#view-notes{ padding:24px 16px 96px }
   #view-training{ gap:28px }
   .bottom-nav{ display:block }
+  .embed .view{ padding-bottom:24px !important }
 
   .page-title{ font-size:38px }
   .page-head{ flex-direction:column; align-items:stretch; gap:14px }
@@ -622,6 +630,114 @@ a{ color:inherit; text-decoration:none }
   .log-sets{ grid-template-columns:40px 1fr 18px 1fr }
   .big-in{ width:100%; font-size:44px }
 }
+
+/* ══ embed only: AA colours, 12px floor, lb lines, Fitbit banner ══
+   Standalone keeps the brighter palette and its 10px and 11px labels. */
+html.embed{
+  --red:#bf3516; --green:#1a7655; --purple:#873ce0;
+}
+html.embed .lbl-s,
+html.embed .hero-stat-lbl,
+html.embed .hero-scale,
+html.embed .strip-cap,
+html.embed .ready-stat em,
+html.embed .pillar-tag,
+html.embed .week-cell-top,
+html.embed .week-chip,
+html.embed .week-extra,
+html.embed .sess-th,
+html.embed .grid-days div,
+html.embed .grid-months,
+html.embed .run-card-top,
+html.embed .cut-chart-head,
+html.embed .pace-stat span,
+html.embed .pace-legend,
+html.embed .note-filter,
+html.embed .note-cat,
+html.embed .note-date,
+html.embed .modal-sub,
+html.embed .prog-next,
+html.embed .pill-last,
+html.embed .pill-max,
+html.embed .log-prog-tag,
+html.embed .log-sets .th,
+html.embed .field-lbl,
+html.embed .imp-row-top span,
+html.embed .drawer-pill span,
+html.embed .drawer-note-date,
+html.embed .wordmark-sub,
+html.embed .chip-sync,
+html.embed .ready-pill,
+html.embed .bottom-tab,
+html.embed .hdr-date{
+  font-size:12px;
+}
+html.embed .grid-days div{ height:16px; line-height:16px }
+html.embed .grid-months{ height:24px }
+/* Faint is a border colour. Placeholder text uses muted so it stays AA. */
+html.embed input::placeholder,
+html.embed textarea::placeholder{ color:var(--muted) }
+html.embed .hero-mark{ display:none }
+html.embed .lb{ display:block; font-family:'Archivo',sans-serif; font-weight:700;
+  font-size:13px; letter-spacing:0.02em; color:var(--muted); margin-top:4px }
+html.embed .hero .lb,
+html.embed .cut-card .lb,
+html.embed .score-card .lb,
+html.embed .evening .lb{ color:inherit }
+html.embed .hero-top > span:first-child{ display:flex; flex-direction:column; align-items:flex-start }
+html.embed .hero-top .lb{ font-size:12px; font-weight:700; margin-top:2px }
+html.embed .hero-unit-col{ display:flex; flex-direction:column; align-items:flex-start; padding-bottom:6px }
+html.embed .hero-unit-col .lb{ font-size:16px; font-weight:800; letter-spacing:0.06em; margin-top:6px }
+html.embed .hero-stat-val small{ font-size:0.42em; margin-left:4px; letter-spacing:0.02em }
+html.embed .hero-stat-val .lb{ font-size:13px; font-weight:800; letter-spacing:0.04em; margin-top:6px }
+html.embed .hero-scale.v3{ height:40px }
+html.embed .hero-scale .lb{ font-size:12px; font-weight:700; margin-top:2px }
+html.embed .hero-scale > .e{ text-align:right }
+html.embed .hero-vel.v3{ display:flex; flex-direction:column; align-items:flex-start; gap:3px; white-space:normal }
+html.embed .hero-vel.v3 > span:first-child{ white-space:nowrap }
+html.embed .hero-vel.v3 .lb{ margin:0; font-size:12px; font-weight:700; color:var(--on-ink-dim); letter-spacing:0.06em }
+html.embed .score-card{ overflow:visible }
+html.embed .scan-lbl{ margin-top:18px; padding-top:14px; border-top:2px solid rgba(239,233,218,0.25) }
+html.embed .scan-row{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:10px }
+html.embed .scan-row b{ display:block; font-family:'Big Shoulders Display',sans-serif; font-weight:900; font-size:36px; line-height:0.85; color:var(--gold) }
+html.embed .scan-row b small{ font-size:0.45em; margin-left:4px; letter-spacing:0.02em }
+html.embed .scan-row em{ display:block; font-style:normal; font-weight:800; font-size:12px; letter-spacing:0.1em; color:var(--on-ink-dim); margin-top:4px }
+html.embed .scan-row .lb{ color:var(--on-ink-dim); font-size:12px; font-weight:700; margin-top:4px }
+html.embed .cut-val-col{ display:flex; flex-direction:column; align-items:flex-start }
+html.embed .cut-val-col .lb,
+html.embed .cut-target .lb{ font-size:12px; font-weight:800; margin-top:6px }
+html.embed .recap-val .lb{ font-size:13px; font-weight:800; margin-top:4px }
+/* The hub frame supplies the gutters, so embed pages sit flush at every width. */
+html.embed #view-today,
+html.embed #view-training,
+html.embed #view-goals,
+html.embed #view-notes{ padding-left:0; padding-right:0 }
+html.embed .pillars.two{ grid-template-columns:repeat(2,minmax(0,1fr)) }
+html.embed .pillar,
+html.embed .fit-banner,
+html.embed .today-row1{ min-width:0 }
+html.embed .fit-banner{ margin-top:16px; border:3px dashed var(--muted); padding:14px 20px;
+  display:flex; align-items:center; justify-content:space-between; gap:16px }
+html.embed .fit-banner p{ font-weight:600; font-size:14px; color:var(--ink); margin:0 }
+html.embed .fit-banner p b{ font-weight:800; letter-spacing:0.12em; font-size:12px; margin-right:10px }
+html.embed .fit-banner p span{ color:var(--muted); font-weight:600 }
+@media (max-width:768px){
+  html.embed, html.embed body, html.embed .app{ height:auto; min-height:0 }
+  html.embed .fit-banner{ flex-direction:column; align-items:stretch }
+  html.embed .fit-banner .btn-red{ text-align:center }
+  html.embed .fit-banner p b{ display:block; margin:0 0 4px }
+  html.embed .pillars,
+  html.embed .pillars.two{ grid-template-columns:repeat(2,minmax(0,1fr)) }
+}
+@media (max-width:480px){
+  html.embed #view-today,
+  html.embed #view-training,
+  html.embed #view-goals,
+  html.embed #view-notes{ padding-left:0; padding-right:0 }
+  html.embed .pillars,
+  html.embed .pillars.two{ grid-template-columns:repeat(2,minmax(0,1fr)) }
+  html.embed .pillar{ min-width:0 }
+}
 </style>
 </head>
 <body>
@@ -651,52 +767,40 @@ a{ color:inherit; text-decoration:none }
 
   <nav class="bottom-nav" id="bottom-nav"><div class="bottom-nav-inner"></div></nav>
 </div>
+<script src="weight-units.js"></script>
+<script src="hub-origin.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════════════════════════════
 
-// One colour per program type. Nothing else may use these four.
-const TYPE_COLOR = { PUSH:'#f4a800', PULL:'#2e44c8', LEGS:'#1e8a63', UPPER:'#9b5de5' }
+// One colour per program type. Nothing else may use these.
+// PT takes the purple that UPPER had; Chris's PUSH/PULL/LEGS stay only so any
+// imported history still colours correctly.
+const TYPE_COLOR = { PUSH:'#f4a800', PULL:'#2e44c8', LEGS:'var(--green)', PT:'var(--purple)' }
 const INK = '#1a1610', PAPER = '#efe9da', CARD = '#f7f1e3', MUTED = '#6b6555'
-const RED = '#e5431e', GOLD = '#f4a800', BLUE = '#2e44c8', GREEN = '#1e8a63', AMBER = '#b87d00'
+const RED = 'var(--red)', GOLD = '#f4a800', BLUE = '#2e44c8', GREEN = 'var(--green)', AMBER = '#b87d00'
 
 // Text on gold is ink; text on every other fill is paper.
 const typeColor = t => TYPE_COLOR[t] || MUTED
 const typeFg = t => t === 'PUSH' ? INK : PAPER
 
+// Robert trains with an Equinox coach, who picks the exercises on the day, so the
+// one program has no fixed list. `coach` marks that: the logger asks for a session
+// note instead of prefilled sets.
 const PROGRAMS = [
-  { id:'push', short:'PUSH', name:'PUSH', exercises:[
-    { name:'Bench Press', sets:4, defaultReps:8 },
-    { name:'Overhead Press', sets:3, defaultReps:6 },
-    { name:'Chest Fly Machine', sets:3, defaultReps:12 },
-    { name:'Lateral Raise', sets:4, defaultReps:12 },
-    { name:'Tricep Pushdown', sets:3, defaultReps:12 },
-  ]},
-  { id:'pull', short:'PULL', name:'PULL', exercises:[
-    { name:'Lat Pulldown', sets:3, defaultReps:12 },
-    { name:'Long Pull', sets:3, defaultReps:12 },
-    { name:'Dumbbell Row', sets:3, defaultReps:10 },
-    { name:'Facepulls', sets:3, defaultReps:15 },
-    { name:'Bicep Curls Incline Bench', sets:3, defaultReps:12 },
-    { name:'Hammer Curls Incline Bench', sets:3, defaultReps:10 },
-  ]},
-  { id:'legs', short:'LEGS', name:'LEGS', exercises:[
-    { name:'Leg Curl', sets:3, defaultReps:12 },
-    { name:'Leg Extension', sets:3, defaultReps:12 },
-    { name:'Angled Leg Press', sets:3, defaultReps:10 },
-    { name:'Calf Raises on Leg Press', sets:3, defaultReps:15 },
-    { name:'Dumbbell Romanian Deadlift', sets:3, defaultReps:12 },
-    { name:'Hip Abduction Machine', sets:3, defaultReps:15 },
-    { name:'Ab Crunch Machine', sets:3, defaultReps:12 },
-  ]},
+  { id:'pt', short:'PT', name:'PT · TYE', coach:'Tye Castle', place:'Equinox', time:'8 AM', exercises:[] },
 ]
 
 // Day of week → planned session type (0=Sun … 6=Sat), null being a rest/steps day.
-// Edit this and PROGRAMS above to match your own split.
-const ROUTINE = { 0:null, 1:'PUSH', 2:'PULL', 3:null, 4:'LEGS', 5:'UPPER', 6:null }
-const CORE = ['PUSH', 'PULL', 'LEGS']
-const LIFT_TYPES = ['PUSH', 'PULL', 'LEGS', 'UPPER']
+// Edit this and PROGRAMS above to match your own split. Nothing is planned before
+// ROUTINE_START, so days before the schedule began never show as missed.
+const ROUTINE = { 0:null, 1:'PT', 2:null, 3:null, 4:'PT', 5:null, 6:null }
+const ROUTINE_START = '2026-10-05'
+const LIFT_TYPES = ['PT', 'PUSH', 'PULL', 'LEGS', 'UPPER']
+const PER_WEEK = Object.values(ROUTINE).filter(Boolean).length
+const plannedOn = iso => iso >= ROUTINE_START ? ROUTINE[asDate(iso).getDay()] : null
+const programOf = t => PROGRAMS.find(p => p.short === t) || null
 
 const ETA_MAX_DAYS = 550                  // past ~18 months a projection is not a plan
 // These three carry a sensible default and are overridden by the profile on load.
@@ -731,9 +835,9 @@ const EVENING_HOUR = 18
 const BUMP_KG = 0.5                       // a weigh-in up this much shows the why card
 const CAT_COLOR = {
   nutrition:[GREEN, PAPER], recovery:[BLUE, PAPER], training:[GOLD, INK],
-  mindset:[RED, PAPER], habits:[INK, PAPER], general:[MUTED, PAPER],
+  mindset:[RED, PAPER], habits:[INK, PAPER], body:[RED, PAPER], general:[MUTED, PAPER],
 }
-const CAT_ORDER = ['nutrition', 'recovery', 'training', 'mindset', 'habits', 'general']
+const CAT_ORDER = ['body', 'nutrition', 'recovery', 'training', 'mindset', 'habits', 'general']
 const catOf = n => n.category || 'general'
 // Categories are whatever the notes actually carry, in a fixed order where known.
 function noteCats() {
@@ -744,6 +848,39 @@ function noteCats() {
   })
 }
 const TABS = ['today', 'training', 'goals', 'notes']
+
+// Served at the root of its own host, so BASE is empty and /api and /auth are unchanged.
+// If the page is opened under /fitlog/, those calls keep that prefix.
+const BASE = (location.pathname.match(/^\/fitlog(?=\/|$)/) || [''])[0]
+const withBase = u => u.startsWith('/') ? BASE + u : u
+// ?embed=1 hides FITLOG's own chrome; the host drives tabs through the hash (#goals).
+const EMBED = new URLSearchParams(location.search).get('embed') === '1'
+document.documentElement.classList.toggle('embed', EMBED)
+// Framed by the hub. Messages go to HUB_ORIGIN only, never '*' and never this origin.
+const IN_FRAME = EMBED && window.parent !== window
+let HUB_ORIGIN = null
+function parentTarget() {
+  return HubOrigin.messageTarget(HUB_ORIGIN, location.origin)
+}
+function postHeight() {
+  const target = parentTarget()
+  if (!IN_FRAME || !target) return
+  const app = document.querySelector('.app')
+  const height = Math.ceil(Math.max(app.offsetHeight, app.scrollHeight))
+  window.parent.postMessage({ type:'fitlog:height', height }, target)
+}
+function watchEmbedHeight() {
+  if (!EMBED) return
+  new ResizeObserver(() => postHeight()).observe(document.body)
+  window.addEventListener('resize', postHeight)
+}
+async function loadHubOrigin() {
+  if (!EMBED) return
+  const cfg = await api('GET', '/api/config')
+  HUB_ORIGIN = cfg && typeof cfg.hubOrigin === 'string' ? cfg.hubOrigin : null
+}
+// Embed hides SLEEP and STEPS while Fitbit is down; today's score counts the other two.
+const fbHidden = () => EMBED && syncFitbit.ok === false
 
 // ══════════════════════════════════════════════════════════════════════════════
 // STATE
@@ -763,7 +900,7 @@ const YEAR_START = `${YEAR}-01-01`
 // ══════════════════════════════════════════════════════════════════════════════
 async function api(method, url, body) {
   try {
-    const r = await fetch(url, {
+    const r = await fetch(withBase(url), {
       method,
       headers: body ? { 'Content-Type':'application/json' } : {},
       body: body ? JSON.stringify(body) : undefined,
@@ -791,6 +928,14 @@ const asDate = iso => new Date(iso + 'T12:00:00')
 const daysBetween = (a, b) => Math.round((asDate(b) - asDate(a)) / 86400000)
 
 function fmtKg(v) { if (v == null) return '—'; const n = parseFloat(v); return n === Math.floor(n) ? String(Math.floor(n)) : n.toFixed(1) }
+const LB_PER_KG = WeightUnits.LB_PER_KG
+function fmtLb(kg) { return WeightUnits.lbFromKg(kg) }
+// Embed only: a small line under a kilogram figure. Standalone gets an empty string.
+function lbHTML(kg, suffix = 'LB') {
+  if (!EMBED) return ''
+  const lb = fmtLb(kg)
+  return lb == null ? '' : `<span class="lb">${lb} ${suffix}</span>`
+}
 // Month and day names are spelled out here rather than left to the locale, which
 // renders September as SEPT and breaks the fixed-width datelines.
 const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
@@ -827,6 +972,7 @@ function typeOf(s) {
   if (t.includes('PULL')) return 'PULL'
   if (t.includes('LEG')) return 'LEGS'
   if (t.includes('UPPER')) return 'UPPER'
+  if (/^PT\b|PERSONAL TRAIN/.test(t)) return 'PT'
   if (t.includes('CARDIO')) return 'CARDIO'
   if (t.includes('RUN')) return 'CARDIO'
   return t.split(/[·\s]/)[0] || 'SESSION'
@@ -835,10 +981,11 @@ function typeOf(s) {
 const isLift = s => LIFT_TYPES.includes(typeOf(s))
 
 // One scoring function for the day: sleep, food, steps, workout.
-function dayScore(h) {
+// fbOff drops the two Fitbit pillars (embed mode while Fitbit is disconnected).
+function dayScore(h, fbOff = false) {
   if (!h) return 0
-  return (h.sleep_h > 0 ? 1 : 0) + (h.diet_ok ? 1 : 0)
-    + (h.steps >= STEP_TARGET ? 1 : 0) + (h.workout ? 1 : 0)
+  return (!fbOff && h.sleep_h > 0 ? 1 : 0) + (h.diet_ok ? 1 : 0)
+    + (!fbOff && h.steps >= STEP_TARGET ? 1 : 0) + (h.workout ? 1 : 0)
 }
 function habitMap() {
   const m = {}; habitsData.forEach(h => { m[h.date] = h }); return m
@@ -857,14 +1004,24 @@ const realRuns = () => runs.filter(r => !isWalk(r))
 const is5k = r => r.distance_km >= 4.8 && r.distance_km <= 5.2 && r.duration_sec
 const fastest5k = list => list.filter(is5k).reduce((a, r) => (!a || r.duration_sec < a.duration_sec) ? r : a, null)
 
-// Rotation: the least-recently-trained of the core three, skipping anything trained
-// in the last 48h.
-function nextRotationType() {
-  const last = {}
-  sessions.forEach(s => { const t = typeOf(s); if (CORE.includes(t) && (!last[t] || s.date > last[t])) last[t] = s.date })
-  const yesterday = addDays(localIso(), -1)
-  const ranked = CORE.slice().sort((a,b) => (last[a] || '0000').localeCompare(last[b] || '0000'))
-  return ranked.find(t => !last[t] || last[t] < yesterday) || ranked[0]
+// The next planned session from today on that isn't logged yet, read off ROUTINE.
+function nextPlanned() {
+  const today = localIso()
+  const logged = new Set(sessions.map(s => s.date))
+  for (let i = 0; i < 21; i++) {
+    const iso = addDays(today, i)
+    const t = plannedOn(iso)
+    if (t && !logged.has(iso)) return { type:t, date:iso, today: i === 0 }
+  }
+  return null
+}
+function nextRotationType() { return (nextPlanned() || {}).type || PROGRAMS[0].short }
+// "PT MON 5 OCT · 8 AM", or "PT TODAY · 8 AM".
+function nextPlannedTxt() {
+  const n = nextPlanned()
+  if (!n) return 'NOTHING PLANNED'
+  const p = programOf(n.type)
+  return `${n.type} ${n.today ? 'TODAY' : fmtDate(n.date)}${p && p.time ? ` · ${p.time}` : ''}`
 }
 function lastSessionOfType(t) {
   return sessions.filter(s => typeOf(s) === t).sort((a,b) => a.date < b.date ? 1 : -1)[0] || null
@@ -916,8 +1073,22 @@ function projection() {
   return { weekly, days, etaMs: asDate(localIso()).getTime() + days * 86400000 }
 }
 
+// On track: losing at least ~90% of the planned rate, or already within 1 kg of the
+// goal and not gaining. One verdict for the hero, the evening card and the cut card.
+const PACE_TOLERANCE = 0.9
+const NEAR_GOAL_KG = 1
+function paceVerdict(weekly, w = (todayData.bodyWeight || {}).weight_kg) {
+  if (weekly == null) return 'NO TREND YET'
+  const toGo = goals.bw_goal && w ? w - goals.bw_goal : null
+  if (toGo != null && toGo <= 0) return 'AT GOAL'
+  if (weekly <= -PLAN_KG_PER_WEEK * PACE_TOLERANCE) return 'ON TRACK'
+  if (toGo != null && toGo <= NEAR_GOAL_KG && weekly < 0.05) return 'ON TRACK'
+  return 'BELOW TARGET'
+}
+
 // Energy budget: Mifflin St Jeor BMR, a sedentary multiplier, plus the real cost of
-// the day's steps. 1 kg of fat is 7700 kcal, so 1 kg/week is a 1100 kcal daily deficit.
+// the day's steps. 1 kg of fat is 7700 kcal, so 1 kg/week is a 1100 kcal daily deficit
+// and 0.5 kg/week is 550.
 const KCAL_PER_KG_FAT = 7700
 const KCAL_PER_1K_STEPS = 43
 const SEDENTARY = 1.15
@@ -946,12 +1117,14 @@ function energy() {
       return sum + Math.max(0, byHR - counted)
     }, 0))
   const burn = s => bmr*SEDENTARY + (s/1000)*KCAL_PER_1K_STEPS + hrBonus
-  const deficit = KCAL_PER_KG_FAT / 7
+  // The deficit follows the profile's planned rate (goals.plan_kg_per_week), 1 kg/week if unset.
+  const rate = +goals.plan_kg_per_week || 1
+  const deficit = KCAL_PER_KG_FAT * rate / 7
   const FLOOR = 1600
   const eatToday = Math.max(FLOOR, Math.round(burn(steps) - deficit))
-  const eatAt10k = Math.max(FLOOR, Math.round(burn(STEP_TARGET) - deficit))
+  const eatAtTarget = Math.max(FLOOR, Math.round(burn(STEP_TARGET) - deficit))
   const left = eatToday - eaten
-  return { eatToday, walkWorth: Math.max(0, eatAt10k - eatToday), eaten, left, steps, over: left < 0, ok:true }
+  return { eatToday, eatAtTarget, walkWorth: Math.max(0, eatAtTarget - eatToday), eaten, left, steps, over: left < 0, ok:true }
 }
 
 // Readiness: unchanged rules. RHR against a 7-day baseline, HRV against 75% of it,
@@ -960,7 +1133,7 @@ function readiness() {
   const sl = todayData.todaySleepHours || 0
   const rec = [...recoveryData].filter(r => r.rhr || r.hrv_ms).sort((a,b) => a.date < b.date ? -1 : 1)
   let verdict = 'GREEN', color = GREEN, short = 'TRAIN', advice = 'Train as planned. Push targets.'
-  let stats = [], rhrUp = 0
+  let stats = [], rhrUp = 0, asOf = null
   if (rec.length) {
     const latest = rec[rec.length-1], prior = rec.slice(-8, -1)
     const rhrBase = mean(prior.map(r => r.rhr).filter(Boolean))
@@ -971,12 +1144,13 @@ function readiness() {
     else if (rhrUp >= 3 || hrvLow || (sl > 0 && sl < SLEEP_TARGET)) { verdict='AMBER'; color=AMBER; short='HOLD'; advice='Train, hold weights. No new PRs.' }
     if (latest.rhr) stats.push({ lbl:'RESTING HR', val: Math.round(latest.rhr), delta: rhrBase ? `${sgn(latest.rhr-rhrBase)} vs 7d` : '' })
     if (latest.hrv_ms) stats.push({ lbl:'HRV', val: Math.round(latest.hrv_ms), delta: hrvBase ? `${sgn(latest.hrv_ms-hrvBase)} vs 7d` : '' })
+    asOf = latest.date
   } else {
     if (sl > 0 && sl < 5.5) { verdict='RED'; color=RED; short='REST'; advice='Walk and mobility only. Protect the back.' }
     else if (sl > 0 && sl < SLEEP_TARGET) { verdict='AMBER'; color=AMBER; short='HOLD'; advice='Train, hold weights. No new PRs.' }
   }
   if (sl > 0) stats.push({ lbl:'SLEEP', val: sl.toFixed(1), delta:'HRS' })
-  return { verdict, color, short, advice, stats: stats.slice(0, 3), rhrUp }
+  return { verdict, color, short, advice, stats: stats.slice(0, 3), rhrUp, asOf }
 }
 
 // Mode comes from the clock and the data, never from a user setting.
@@ -985,7 +1159,7 @@ function deriveMode() {
   const hour = new Date().getHours()
   const hist = [...(todayData.bwHistory || [])].sort((a,b) => a.date < b.date ? -1 : 1)
   const weighedToday = hist.some(b => b.date === today)
-  const score = dayScore(habitMap()[today])
+  const score = dayScore(habitMap()[today], fbHidden())
   const ready = readiness()
   const bump = hist.length >= 2
     && hist[hist.length-1].weight_kg - hist[hist.length-2].weight_kg >= BUMP_KG
@@ -995,7 +1169,7 @@ function deriveMode() {
     monday: new Date().getDay() === 1,
     red: ready.verdict === 'RED',
     bump,
-    score, hour, ready, today,
+    score, max: fbHidden() ? 2 : 4, hour, ready, today,
   }
 }
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1057,8 +1231,10 @@ function heroChartSVG(data, goalKg, opts = {}) {
   const inWin = daysToGoal > 0 && dxMs(crossMs) <= rightX
   const endX = inWin ? dxMs(crossMs) : rightX
   const endY = inWin ? gy : py(lastSm - ((tEnd - lastMs)/86400000)/7)
-  const txt = (x, y, size, fill, s, anchor = 'start', ls = 1) =>
-    `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-family="Archivo,sans-serif" font-weight="800" font-size="${(size*L).toFixed(1)}" letter-spacing="${ls}" text-anchor="${anchor}" fill="${fill}">${s}</text>`
+  const txt = (x, y, size, fill, s, anchor = 'start', ls = 1) => {
+    const px = EMBED ? Math.max(12, size * L) : size * L
+    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-family="Archivo,sans-serif" font-weight="800" font-size="${px.toFixed(1)}" letter-spacing="${ls}" text-anchor="${anchor}" fill="${fill}">${s}</text>`
+  }
 
   let out = ''
   out += `<line x1="${pl}" y1="${gy.toFixed(1)}" x2="${rightX}" y2="${gy.toFixed(1)}" stroke="rgba(${accent},0.5)" stroke-width="1.5" stroke-dasharray="6 4"/>`
@@ -1097,7 +1273,7 @@ function syncChip(name, status, timeSrc, waitingLabel) {
   const cls = !status.connected || status.ok === false ? 'expired'
     : (timeSrc ? '' : 'waiting')
   if (cls === 'expired') {
-    const url = status.reconnect_url || '#'
+    const url = withBase(status.reconnect_url || '#')
     const why = status.last_error ? `Sync failed: ${status.last_error}`
       : status.stale_hours != null ? `Last sync ${status.stale_hours}h ago`
       : 'Not connected'
@@ -1148,9 +1324,13 @@ function heroHTML(mode) {
   const bw = todayData.bodyWeight
   const start = goals.bw_start, goal = goals.bw_goal
   if (!bw || !start || !goal) {
+    const kg = bw ? bw.weight_kg : null
+    const unit = EMBED
+      ? `<span class="hero-unit-col"><span class="hero-kg-unit">KG</span>${lbHTML(kg)}</span>`
+      : `<span class="hero-kg-unit">KG</span>`
     return `<div class="hero">
       <div class="hero-top"><span>THE CUT</span></div>
-      <div class="hero-num"><span class="hero-kg">${bw ? fmtKg(bw.weight_kg) : '—'}</span><span class="hero-kg-unit">KG</span></div>
+      <div class="hero-num"><span class="hero-kg">${kg != null ? fmtKg(kg) : '—'}</span>${unit}</div>
       <div class="hero-foot">
         <span class="hero-eta">${bw ? 'Set a start and goal weight on the Goals tab.' : 'Log a weight to start the cut.'}</span>
         <button class="hero-btn invert" data-act="open-weight">+ LOG WEIGHT</button>
@@ -1162,9 +1342,9 @@ function heroHTML(mode) {
   const pct = clampPct((start - w) / (start - goal) * 100)
   const proj = projection()
   const weekly = proj.weekly
-  const velTxt = weekly == null ? '— KG/WK'
-    : `${weekly < 0 ? '↓' : weekly > 0 ? '↑' : '='} ${Math.abs(weekly).toFixed(1)} KG/WK`
-  const trackTxt = weekly == null ? 'NO TREND YET' : weekly <= -0.8 ? 'ON TRACK' : 'BELOW TARGET'
+  const pace = weekly == null ? null : WeightUnits.paceLines(weekly)
+  const velTxt = pace ? pace.kgText : '— KG/WK'
+  const trackTxt = paceVerdict(weekly, w)
   const etaMs = proj.etaMs
   const cutStart = cutStartDate()
   const day = daysBetween(cutStart, localIso()) + 1
@@ -1185,20 +1365,33 @@ function heroHTML(mode) {
   const marks = milestones(start, goal).map(([kg, note]) =>
     ({ kg, note, left: ((start - kg) / (start - goal) * 100).toFixed(1) + '%' }))
 
+  const kgUnit = EMBED ? '<small>KG</small>' : ''
   const stats = [
-    { lbl:'LOST', val: `${lost >= 0 ? '−' : '+'}${fmtKg(Math.abs(lost))}` },
-    { lbl:'TO GO', val: toGo.toFixed(1) },
+    { lbl:'LOST', val: `${lost >= 0 ? '−' : '+'}${fmtKg(Math.abs(lost))}${kgUnit}${lbHTML(lost)}` },
+    { lbl:'TO GO', val: `${toGo.toFixed(1)}${kgUnit}${lbHTML(toGo)}` },
     { lbl:'DONE', val: Math.round(pct) + '%' },
   ]
+  const unit = EMBED
+    ? `<span class="hero-unit-col"><span class="hero-kg-unit">KG</span>${lbHTML(w)}</span>`
+    : `<span class="hero-kg-unit">KG</span>`
+  const rangeLb = EMBED ? `<span class="lb">${fmtLb(start)} → ${fmtLb(goal)} LB</span>` : ''
+  const velLb = EMBED && pace ? `<span class="lb">${pace.lbText}</span>` : ''
+  const vel = velLb
+    ? `<span class="hero-vel v3"><span>${velTxt} <i>${trackTxt}</i></span>${velLb}</span>`
+    : `<span class="hero-vel">${velTxt} <i>${trackTxt}</i></span>`
+  // Embed drops the 100 / 95 captions; the ticks stay. Standalone keeps both.
+  const captions = EMBED ? '' : marks.map(k => `<span class="hero-mark" style="--l:${k.left}">${k.kg}<br><i>${k.note}</i></span>`).join('')
+  const startLbl = EMBED ? `${start} KG START${lbHTML(start)}` : `${start} START`
+  const endLbl = EMBED ? `${goal} KG FINISH ⚑${lbHTML(goal)}` : `${goal} FINISH ⚑`
   return `<div class="hero">
     <div class="hero-top">
-      <span>THE CUT · ${start} → ${goal} KG</span>
+      <span>THE CUT · ${start} → ${goal} KG${rangeLb}</span>
       <span class="hero-top-r">
         <span class="hero-status${mode.notWeighed ? ' warn' : ''}">${status}</span>
         <span>DAY ${day}</span>
       </span>
     </div>
-    <div class="hero-num"><span class="hero-kg">${fmtKg(w)}</span><span class="hero-kg-unit">KG</span></div>
+    <div class="hero-num"><span class="hero-kg">${fmtKg(w)}</span>${unit}</div>
     <div class="hero-stats">${stats.map(s =>
       `<div><div class="hero-stat-lbl">${s.lbl}</div><div class="hero-stat-val">${s.val}</div></div>`).join('')}</div>
     <div class="hero-barwrap">
@@ -1207,15 +1400,15 @@ function heroHTML(mode) {
         ${marks.map(k => `<div class="hero-tick" style="--l:${k.left}"></div>`).join('')}
         <div class="hero-marker"></div>
       </div>
-      <div class="hero-scale">
-        <span class="s">${start} START</span>
-        ${marks.map(k => `<span class="hero-mark" style="--l:${k.left}">${k.kg}<br><i>${k.note}</i></span>`).join('')}
-        <span class="e">${goal} FINISH ⚑</span>
+      <div class="hero-scale${EMBED ? ' v3' : ''}">
+        <span class="s">${startLbl}</span>
+        ${captions}
+        <span class="e">${endLbl}</span>
       </div>
     </div>
     <div class="hero-foot">
       <div class="hero-foot-l">
-        <span class="hero-vel">${velTxt} <i>${trackTxt}</i></span>
+        ${vel}
         <span class="hero-eta">${esc(eta)}</span>
       </div>
       <button class="hero-btn${mode.notWeighed ? ' invert' : ''}" data-act="open-weight">+ LOG WEIGHT</button>
@@ -1241,8 +1434,11 @@ function eveningHTML(mode) {
       text: `Three of four done. Log what you ate and today is 4/4, taking the streak to ${plural(streak+1, 'day')}.` },
     sleep: { big: '—', unit: 'HRS<br>LOGGED', act:'EDIT HOURS', on:'open-sleep',
       text: `Three of four done. Last night has no hours against it, so today sits at 3/4. Fill it in and the streak goes to ${plural(streak+1, 'day')}.` },
-    workout: { big: nextRotationType(), unit: 'STILL<br>OPEN', act:'START SESSION', on:'open-pick',
-      text: `Three of four done. One session left and today is 4/4, taking the streak to ${plural(streak+1, 'day')}.` },
+    workout: plannedOn(mode.today)
+      ? { big: plannedOn(mode.today), unit: 'STILL<br>OPEN', act:'LOG SESSION', on:'open-pick',
+          text: `Three of four done. Log today's ${plannedOn(mode.today)} session and today is 4/4, taking the streak to ${plural(streak+1, 'day')}.` }
+      : { big: 'REST', unit: 'NO SESSION<br>PLANNED', act:'LOG SESSION', on:'open-pick',
+          text: `Three of four done. No session is planned today; a workout of your own would make it 4/4. Next up: ${nextPlannedTxt()}.` },
   }[missing]
   const stats = [
     { lbl:'TODAY', val:`${mode.score}/4` },
@@ -1250,7 +1446,7 @@ function eveningHTML(mode) {
     { lbl:'KCAL LEFT', val: num(Math.max(0, en.left)) },
   ]
   const velTxt = vel ? `${vel.weekly < 0 ? '↓' : '↑'} ${Math.abs(vel.weekly).toFixed(1)} KG/WK` : 'NO TREND YET'
-  const track = vel && vel.weekly <= -0.8 ? 'ON TRACK' : 'BELOW TARGET'
+  const track = paceVerdict(vel ? vel.weekly : null)
   return `<div class="evening">
     <div class="evening-top">
       <span>TONIGHT · ${new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</span>
@@ -1264,7 +1460,7 @@ function eveningHTML(mode) {
     <div class="evening-stats">${stats.map(s =>
       `<div><div class="hero-stat-lbl on-dim">${s.lbl}</div><div class="hero-stat-val">${s.val}</div></div>`).join('')}</div>
     <div class="evening-foot">
-      <span class="evening-wt">${bw ? `${fmtKg(bw.weight_kg)} KG THIS MORNING · ${velTxt} · ${track}` : 'NO WEIGH-IN YET'}</span>
+      <span class="evening-wt">${bw ? `${fmtKg(bw.weight_kg)} KG THIS MORNING${lbHTML(bw.weight_kg)} · ${velTxt} · ${track}` : 'NO WEIGH-IN YET'}</span>
       <button class="evening-btn" data-act="${HEAD.on}">${HEAD.act}</button>
     </div>
   </div>`
@@ -1274,24 +1470,53 @@ function scoreCardHTML(mode) {
   const m = habitMap()
   const streak = fullDayStreak()
   const shade = ['rgba(239,233,218,0.1)','rgba(244,168,0,0.22)','rgba(244,168,0,0.45)','rgba(244,168,0,0.7)','#f4a800']
+  const off = fbHidden()
   const cells = Array.from({ length:14 }, (_, i) => {
-    const dt = addDays(mode.today, i-13), s = dayScore(m[dt])
-    return `<div class="strip-cell${dt === mode.today ? ' is-today' : ''}" style="--b:${shade[s]}" title="${dt}: ${s}/4"></div>`
+    const dt = addDays(mode.today, i-13)
+    const s = dayScore(m[dt], off)
+    const max = off ? 2 : 4
+    const shadeIdx = off ? s * 2 : s
+    return `<div class="strip-cell${dt === mode.today ? ' is-today' : ''}" style="--b:${shade[shadeIdx]}" title="${dt}: ${s}/${max}"></div>`
   }).join('')
+  const fullLabel = off ? '2/2 = FULL' : '4/4 = FULL SQUARE'
   return `<div class="score-card">
     <div class="lbl on-dim">TODAY</div>
     <div class="score-row">
-      <div class="score-num"><span class="score-val">${mode.score}/4</span><span class="lbl-m">DONE</span></div>
+      <div class="score-num"><span class="score-val">${mode.score}/${mode.max}</span><span class="lbl-m">DONE</span></div>
       <div style="text-align:right">
         <div class="streak-val">${streak}</div>
         <div class="lbl-s on-dim" style="margin-top:4px">DAY STREAK</div>
       </div>
     </div>
+    ${scanRowHTML()}
     <div class="strip-wrap">
       <div class="strip">${cells}</div>
-      <div class="strip-cap"><span>LAST 14 DAYS</span><span>4/4 = FULL SQUARE</span></div>
+      <div class="strip-cap"><span>LAST 14 DAYS</span><span>${fullLabel}</span></div>
     </div>
   </div>`
+}
+
+function stykuScan() {
+  const date = goals.styku_date
+  const weightLb = parseFloat(goals.styku_weight_lb)
+  const bf = parseFloat(goals.styku_bf_pct)
+  const leanLb = parseFloat(goals.styku_lean_lb)
+  if (!date || !Number.isFinite(weightLb) || !Number.isFinite(bf) || !Number.isFinite(leanLb)) return null
+  return { date, weightLb, bf, leanLb }
+}
+
+function scanRowHTML() {
+  if (!EMBED) return ''
+  const s = stykuScan()
+  if (!s) return ''
+  const wKg = WeightUnits.kgFromLb(s.weightLb)
+  const lKg = WeightUnits.kgFromLb(s.leanLb)
+  return `<div class="scan-lbl lbl-s on-dim">STYKU SCAN · ${fmtDayMon(s.date)}</div>
+    <div class="scan-row">
+      <div><b>${Number(s.bf).toFixed(1)}%</b><em>BODY FAT</em></div>
+      <div><b>${wKg}<small>KG</small></b><span class="lb">${Number(s.weightLb).toFixed(1)} LB</span><em>WEIGHT</em></div>
+      <div><b>${lKg}<small>KG</small></b><span class="lb">${Number(s.leanLb).toFixed(1)} LB</span><em>LEAN MASS</em></div>
+    </div>`
 }
 
 function recapCardHTML(mode) {
@@ -1302,8 +1527,8 @@ function recapCardHTML(mode) {
   const a = bwOn(addDays(prevMon, -1)), b = bwOn(prevSun)
   const lost = a != null && b != null ? a - b : null
   const stats = [
-    { lbl:'KG LOST', val: lost == null ? '—' : `${lost >= 0 ? '−' : '+'}${fmtKg(Math.abs(lost))}` },
-    { lbl:'SESSIONS', val: `${sessions.filter(s => days.includes(s.date)).length} / 4` },
+    { lbl:'KG LOST', val: lost == null ? '—' : `${lost >= 0 ? '−' : '+'}${fmtKg(Math.abs(lost))}${lbHTML(lost)}` },
+    { lbl:'SESSIONS', val: `${sessions.filter(s => days.includes(s.date)).length} / ${PER_WEEK}` },
     { lbl:'DAYS AT 4/4', val: `${days.filter(d => dayScore(m[d]) === 4).length} / 7` },
     { lbl:'FOOD ON PLAN', val: `${days.filter(d => m[d] && m[d].diet_ok).length} / 7` },
   ]
@@ -1316,7 +1541,7 @@ function recapCardHTML(mode) {
     </div>
     <div class="recap-stats">${stats.map(s =>
       `<div><div class="lbl-s on-dim">${s.lbl}</div><div class="recap-val">${s.val}</div></div>`).join('')}</div>
-    <div class="recap-foot">WEEK ${wk+1} OPENS WITH ${nextRotationType()}.${reconnect}</div>
+    <div class="recap-foot">NEXT UP: ${nextPlannedTxt()}.${reconnect}</div>
   </div>`
 }
 
@@ -1334,7 +1559,7 @@ function readyCardHTML(mode) {
     <div class="ready-card-top"><span class="lbl">READINESS</span><span class="ready-verdict">${r.verdict}</span></div>
     <div class="ready-advice">${esc(r.advice)}</div>
     <div class="ready-stats">${r.stats.map(s =>
-      `<div class="ready-stat"><span class="lbl-s">${s.lbl}</span><b>${s.val}</b><em>${esc(s.delta)}</em></div>`).join('')}</div>
+      `<div class="ready-stat"><span class="lbl-s">${s.lbl}</span><b>${s.val}</b><em>${esc(s.delta)}</em></div>`).join('')}${r.asOf ? `<div class="ready-stat"><span class="lbl-s">${fmtDayMon(r.asOf)}</span></div>` : ''}</div>
   </div>`
 }
 
@@ -1343,8 +1568,6 @@ function pillarsHTML(mode) {
   const sl = todayData.todaySleepHours || 0
   const today = mode.today
   const todaySession = sessions.find(s => s.date === today)
-  const nextType = nextRotationType()
-  const lastNext = lastSessionOfType(nextType)
   const fbDown = syncFitbit.ok === false
 
   const done = (c, fg) => ({ cls:'done', c, fg, tag:'✓ DONE' })
@@ -1372,7 +1595,7 @@ function pillarsHTML(mode) {
   // STEPS
   const stepsDone = en.steps >= STEP_TARGET
   const steps = { ...(stepsDone ? done(GOLD, INK) : todo), label:'STEPS',
-    val: en.steps ? num(en.steps) : '—', unit:'/ 10K', action:'+ ADD STEPS', act:'open-steps',
+    val: en.steps ? num(en.steps) : '—', unit:`/ ${fmtKg(STEP_TARGET / 1000)}K`, action:'+ ADD STEPS', act:'open-steps',
     bar: clampPct(en.steps / STEP_TARGET * 100),
     sub: fbDown ? 'Waiting on Fitbit.'
       : stepsDone ? `Target hit. Today's budget is ${num(en.eatToday)} kcal.`
@@ -1380,26 +1603,39 @@ function pillarsHTML(mode) {
   if (fbDown && !en.steps) { steps.val = '—'; steps.bar = null }
 
   // WORKOUT
+  // Coach-led sessions (PT) carry no sets, so the tile describes the session, not volume.
+  const planned = plannedOn(today)
+  const plannedProg = planned ? programOf(planned) : null
   let workout
   if (todaySession) {
     const t = typeOf(todaySession)
     const time = fmtTime(todaySession.ended_at) || fmtTime(todaySession.created_at)
+    const p = programOf(t)
     workout = { ...done(INK, PAPER), label:'WORKOUT', val:t, unit: time || 'TODAY',
-      sub: `${plural(todaySession.total_sets || 0, 'set')}${todaySession.volume_kg ? ` · ${num(Math.round(todaySession.volume_kg))} kg` : ''}. Logged from Notes.`,
+      sub: p && p.coach && !todaySession.total_sets
+        ? `${p.place} session with ${p.coach.split(' ')[0]}.${todaySession.note ? ` ${todaySession.note}` : ''}`
+        : `${plural(todaySession.total_sets || 0, 'set')}${todaySession.volume_kg ? ` · ${num(Math.round(todaySession.volume_kg))} kg` : ''}.`,
       action:'VIEW SESSION', act:'session', id: todaySession.id }
   } else if (mode.red) {
-    workout = { ...todo, label:'WORKOUT', val:'WALK', unit:'REST DAY', btn:'', act:'open-note',
+    workout = { ...todo, tag:'REST', label:'WORKOUT', val:'WALK', unit:'REST DAY', btn:'', act:'open-note',
       sub: `${[mode.ready.rhrUp >= 1 ? `RHR +${Math.round(mode.ready.rhrUp)}` : null,
-        sl ? `${sl.toFixed(1)}h sleep` : 'no sleep logged'].filter(Boolean).join(' and ')}. Walk and mobility today, ${nextType} tomorrow.`,
+        sl ? `${sl.toFixed(1)}h sleep` : 'no sleep logged'].filter(Boolean).join(' and ')}. Walk and mobility today.${planned ? ` Tell ${plannedProg && plannedProg.coach ? plannedProg.coach.split(' ')[0] : 'your coach'} before the session.` : ` Next up: ${nextPlannedTxt()}.`}`,
       action:'LOG MOBILITY' }
+  } else if (planned) {
+    const p = plannedProg || {}
+    const lastP = lastSessionOfType(planned)
+    workout = { ...todo, label:'WORKOUT', val:planned, unit: p.time || 'TODAY', btn:'cta',
+      sub: p.coach
+        ? `${p.place} personal training with ${p.coach.split(' ')[0]}, who picks the exercises.${lastP ? ` Last: ${fmtDate(lastP.date)}.` : ''}`
+        : lastP ? `Last ${planned}: ${fmtDate(lastP.date)}, ${plural(lastP.total_sets || 0, 'set')}.` : `No ${planned} on record yet.`,
+      action:`LOG ${planned} →`, act:'open-log', type:planned }
   } else {
-    workout = { ...todo, label:'WORKOUT', val:nextType, unit:'NEXT', btn:'cta',
-      sub: lastNext ? `Last ${nextType}: ${fmtDate(lastNext.date)}, ${plural(lastNext.total_sets || 0, 'set')}.`
-        : `No ${nextType} on record yet.`,
-      action:`START ${nextType} →`, act:'open-log', type:nextType }
+    workout = { ...todo, tag:'REST', label:'WORKOUT', val:'REST', unit:'WALK DAY', btn:'',
+      sub: `No session planned. Hit the steps, or log a workout of your own. Next up: ${nextPlannedTxt()}.`,
+      action:'LOG SESSION', act:'open-pick' }
   }
 
-  const list = [sleep, food, steps, workout]
+  const list = fbHidden() ? [food, workout] : [sleep, food, steps, workout]
   return list.map(p => {
     const attrs = [`data-act="${p.act || ''}"`]
     if (p.type) attrs.push(`data-type="${p.type}"`)
@@ -1425,8 +1661,18 @@ function renderToday(mode) {
       ${left}
       <div class="today-right">${card}${readyCardHTML(mode)}</div>
     </div>
-    <div class="log-head"><span>LOG TODAY</span><span class="meta">${mode.score} OF 4 DONE</span></div>
-    <div class="pillars">${pillarsHTML(mode)}</div>`
+    <div class="log-head"><span>LOG TODAY</span><span class="meta">${mode.score} OF ${mode.max} DONE</span></div>
+    <div class="pillars${fbHidden() ? ' two' : ''}">${pillarsHTML(mode)}</div>
+    ${fitbitBannerHTML()}`
+}
+
+function fitbitBannerHTML() {
+  if (!fbHidden()) return ''
+  const url = syncFitbit.reconnect_url || '/auth/google-health'
+  return `<div class="fit-banner">
+    <p><b>SLEEP + STEPS HIDDEN</b><span>Fitbit isn't connected. They come back here once it syncs again.</span></p>
+    <button class="btn-red" data-act="reconnect" data-url="${esc(url)}">RECONNECT FITBIT ↗</button>
+  </div>`
 }
 // ══════════════════════════════════════════════════════════════════════════════
 // TRAINING
@@ -1436,12 +1682,11 @@ function weekStripHTML() {
   const monday = addDays(today, -((new Date(today + 'T12:00:00').getDay() + 6) % 7))
   const DAYN = ['MON','TUE','WED','THU','FRI','SAT','SUN']
   const byDate = {}; sessions.forEach(s => { if (!byDate[s.date]) byDate[s.date] = s })
-  const nextType = nextRotationType()
   let done = 0
 
   const cells = Array.from({ length:7 }, (_, i) => {
     const iso = addDays(monday, i)
-    const planned = ROUTINE[(i+1) % 7]
+    const planned = plannedOn(iso)
     const s = byDate[iso]
     const walk = runs.find(r => r.date === iso && isWalk(r))
     const isToday = iso === today, future = iso > today
@@ -1449,8 +1694,8 @@ function weekStripHTML() {
     if (s) {
       const t = typeOf(s); done++
       chip = `${t} ✓`; chipBg = typeColor(t); chipFg = typeFg(t); chipBorder = typeColor(t)
-    } else if (isToday) {
-      chip = `NEXT: ${nextType}`; chipBg = GOLD; chipFg = INK; chipBorder = GOLD
+    } else if (isToday && planned) {
+      chip = `${planned} TODAY`; chipBg = GOLD; chipFg = INK; chipBorder = GOLD
     } else if (planned && future) {
       chip = planned; chipBorder = typeColor(planned); chipStyle = 'dashed'
     } else if (!planned) {
@@ -1489,7 +1734,7 @@ function recentSessionsHTML() {
     return `<div class="sess-row">
       <div class="sess-head">
         <button class="sess-chip" style="--c:${typeColor(t)};--fg:${typeFg(t)}" data-act="session" data-id="${s.id}">■ SESSION ${no} · ${t}</button>
-        <span class="sess-date">${fmtDate(s.date)}${bw ? ` · ${fmtKg(bw)} KG BW` : ''}</span>
+        <span class="sess-date">${fmtDate(s.date)}${bw ? ` · ${fmtKg(bw)} KG BW${lbHTML(bw)}` : ''}</span>
         <span class="sess-meta">${s.exercise_count} EXERCISES · ${s.total_sets} SETS${s.volume_kg ? ` · ${num(Math.round(s.volume_kg))} KG` : ''}</span>
       </div>
       ${rows ? `<div class="sess-table">
@@ -1523,7 +1768,8 @@ function yearGridHTML() {
   }
   const year = sessions.filter(s => s.date >= YEAR_START)
   const other = year.filter(s => !isLift(s)).length
-  const legend = ['PUSH','PULL','LEGS','UPPER'].map(t =>
+  const shownTypes = Object.keys(TYPE_COLOR).filter(t => t === 'PT' || year.some(s => typeOf(s) === t))
+  const legend = shownTypes.map(t =>
     `<div class="grid-legend-row"><span class="grid-legend-sw" style="--c:${TYPE_COLOR[t]}"></span><span>${t}</span><b>${year.filter(s => typeOf(s) === t).length}</b></div>`).join('')
     + (other ? `<div class="grid-legend-row"><span class="grid-legend-sw" style="--c:${MUTED}"></span><span>CARDIO</span><b>${other}</b></div>` : '')
   return `<div class="grid-card">
@@ -1658,7 +1904,7 @@ function paceChartHTML() {
   const weekly = proj.weekly
   const nowMs = asDate(localIso()).getTime()
   const etaMs = proj.etaMs
-  const tEnd = Math.max(planEnd, etaMs || 0) + 10*DAY
+  const tEnd = Math.max(planEnd, etaMs || 0, nowMs) + 10*DAY
 
   const maxKg = Math.max(start, ...hist.map(h => h.weight_kg))
   const yTop = Math.ceil(maxKg) + 1, yBot = goal - 1
@@ -1672,7 +1918,8 @@ function paceChartHTML() {
   for (let d = new Date(m0); d.getTime() <= tEnd; d.setMonth(d.getMonth() + 1)) {
     months.push({ x: X(d.getTime()), label: MONTHS[d.getMonth()] })
   }
-  const planNow = start - (nowMs - t0) / DAY / 7 * PLAN_KG_PER_WEEK
+  // The plan stops at the goal: once its date has passed, the target is the goal itself.
+  const planNow = Math.max(goal, start - (nowMs - t0) / DAY / 7 * PLAN_KG_PER_WEEK)
   const ahead = planNow - w
   const actual = hist.map(p => `${X(asDate(p.date).getTime()).toFixed(1)},${Y(p.weight_kg).toFixed(1)}`).join(' ')
   const goalY = Y(goal), lblY = goalY - 14
@@ -1701,7 +1948,7 @@ function paceChartHTML() {
         ${ticks.map(kg => `<line x1="20" x2="1180" y1="${Y(kg).toFixed(1)}" y2="${Y(kg).toFixed(1)}" stroke="#ddd5c2" stroke-width="1.5"></line>
           <text x="1190" y="${(Y(kg)+4).toFixed(1)}" font-family="Archivo,sans-serif" font-weight="800" font-size="12" fill="${MUTED}">${kg}</text>`).join('')}
         ${months.map(m => `<text x="${m.x.toFixed(1)}" y="236" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="800" font-size="12" letter-spacing="1" fill="${MUTED}">${m.label}</text>`).join('')}
-        <polyline points="${X(t0).toFixed(1)},${Y(start).toFixed(1)} ${X(planEnd).toFixed(1)},${goalY.toFixed(1)}" fill="none" stroke="${INK}" stroke-width="2" stroke-dasharray="8 6"></polyline>
+        <polyline points="${X(t0).toFixed(1)},${Y(start).toFixed(1)} ${X(planEnd).toFixed(1)},${goalY.toFixed(1)} ${X(tEnd).toFixed(1)},${goalY.toFixed(1)}" fill="none" stroke="${INK}" stroke-width="2" stroke-dasharray="8 6"></polyline>
         ${etaMs ? `<polyline points="${X(nowMs).toFixed(1)},${Y(w).toFixed(1)} ${X(etaMs).toFixed(1)},${goalY.toFixed(1)}" fill="none" stroke="${RED}" stroke-width="3" stroke-dasharray="2 6" stroke-linecap="round"></polyline>` : ''}
         <polyline points="${actual}" fill="none" stroke="${RED}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"></polyline>
         <circle cx="${X(nowMs).toFixed(1)}" cy="${Y(w).toFixed(1)}" r="7" fill="${RED}" stroke="${INK}" stroke-width="2"></circle>
@@ -1739,7 +1986,9 @@ function cutCardHTML() {
   return `<div class="cut-card">
     <div class="cut-left">
       <div class="lbl">BODYWEIGHT · THE CUT</div>
-      <div class="cut-num"><span class="cut-val">${fmtKg(w)}</span><span class="cut-target">→ ${goal} KG</span></div>
+      <div class="cut-num">${EMBED
+        ? `<span class="cut-val-col"><span class="cut-val">${fmtKg(w)}</span>${lbHTML(w)}</span><span class="cut-target">→ ${goal} KG${lbHTML(goal)}</span>`
+        : `<span class="cut-val">${fmtKg(w)}</span><span class="cut-target">→ ${goal} KG</span>`}</div>
       <div class="cut-pct">${Math.round(pct)}% <span>OF THE WAY</span></div>
       <div class="cut-bar" style="--pct:${pct.toFixed(1)}%"><i></i></div>
       <div class="cut-summary">${esc(summary)}</div>
@@ -1895,12 +2144,12 @@ function openWeight() {
   const prev = hist.filter(h => h.date !== localIso()).pop()
   modalRoot().innerHTML = shell({
     title:"TODAY'S WEIGHT",
-    sub:`THE CUT · ${goals.bw_start || '—'} → ${goals.bw_goal || '—'} KG`,
+    sub:`THE CUT · ${goals.bw_start || '—'} → ${goals.bw_goal || '—'} KG${EMBED && goals.bw_start && goals.bw_goal ? `<span class="lb">${fmtLb(goals.bw_start)} → ${fmtLb(goals.bw_goal)} LB</span>` : ''}`,
     body:`<div class="big-in-row">
       <input id="in-weight" class="big-in" type="number" step="0.1" inputmode="decimal" value="${bw && bw.date === localIso() ? bw.weight_kg : ''}">
-      <span class="big-in-unit">KG</span>
+      <span class="big-in-unit">KG${bw && bw.date === localIso() ? lbHTML(bw.weight_kg) : ''}</span>
     </div>
-    <div class="modal-hint">${prev ? `Last weigh-in: ${fmtKg(prev.weight_kg)} kg on ${fmtDate(prev.date)}.` : 'First weigh-in.'}</div>`,
+    <div class="modal-hint">${prev ? `Last weigh-in: ${fmtKg(prev.weight_kg)} kg on ${fmtDate(prev.date)}.${lbHTML(prev.weight_kg)}` : 'First weigh-in.'}</div>`,
     ghost:'CANCEL', primary:'SAVE WEIGHT', primaryAct:'save-weight',
   })
   focusFirst('#in-weight')
@@ -2090,7 +2339,15 @@ function openGoals() {
       <div><div class="field-lbl">PLAN KG/WEEK</div><input id="g-plan" class="mid-in" type="number" step="0.1" value="${goals.plan_kg_per_week || PLAN_KG_PER_WEEK}"></div>
       <div></div>
     </div>
-    <div class="modal-hint">Height and birth date are only used to size the daily calorie budget. Nothing leaves this server.</div>`,
+    <div class="two-col">
+      <div><div class="field-lbl">STYKU DATE</div><input id="g-styku-date" class="text-in" placeholder="YYYY-MM-DD" value="${esc(goals.styku_date || '')}"></div>
+      <div><div class="field-lbl">STYKU BODY FAT %</div><input id="g-styku-bf" class="mid-in" type="number" step="0.1" value="${goals.styku_bf_pct || ''}"></div>
+    </div>
+    <div class="two-col">
+      <div><div class="field-lbl">STYKU WEIGHT LB</div><input id="g-styku-lb" class="mid-in" type="number" step="0.1" value="${goals.styku_weight_lb || ''}"></div>
+      <div><div class="field-lbl">STYKU LEAN LB</div><input id="g-styku-lean" class="mid-in" type="number" step="0.1" value="${goals.styku_lean_lb || ''}"></div>
+    </div>
+    <div class="modal-hint">Height and birth date size the calorie budget. The Styku row is the latest scan, stored here, and only shown in embed mode. Nothing leaves this server.</div>`,
     ghost:'CANCEL', primary:'SAVE GOALS', primaryAct:'save-goals',
   })
   focusFirst('#g-goal')
@@ -2112,8 +2369,12 @@ async function saveGoals() {
   numField('g-steps', 'step_target')
   numField('g-sleep', 'sleep_target')
   numField('g-plan', 'plan_kg_per_week')
+  numField('g-styku-bf', 'styku_bf_pct')
+  numField('g-styku-lb', 'styku_weight_lb')
+  numField('g-styku-lean', 'styku_lean_lb')
   dateField('g-cut', 'cut_start')
   dateField('g-birth', 'birth_date')
+  dateField('g-styku-date', 'styku_date')
   if (!Object.keys(payload).length) return
   const r = await api('POST', '/api/goals', payload)
   if (r) { goals = r; applyProfile() }
@@ -2140,7 +2401,7 @@ async function openSessionDetail(id, pushHash = true) {
       <span class="sess-reps">${(e.sets || []).map(x => x.reps).join(', ') || '—'}</span>`
   }).join('')
   modalRoot().innerHTML = shell({
-    title:`SESSION ${no}`, sub:`${t} · ${fmtDate(s.date)}${bw ? ` · ${fmtKg(bw)} KG BW` : ''}`,
+    title:`SESSION ${no}`, sub:`${t} · ${fmtDate(s.date)}${bw ? ` · ${fmtKg(bw)} KG BW${lbHTML(bw)}` : ''}`,
     spine: typeColor(t), wide:true,
     body:`<div class="sess-meta" style="margin-left:0">${(s.exercises||[]).length} EXERCISES · ${sets.length} SETS${vol ? ` · ${num(Math.round(vol))} KG` : ''}</div>
       ${s.note ? `<div class="sess-note">Focus: ${esc(s.note)}</div>` : ''}
@@ -2171,7 +2432,7 @@ function openPick() {
         <div class="prog-body">
           <div>
             <div class="prog-name">${esc(p.name)}</div>
-            <div class="prog-meta">${p.exercises.length} EXERCISES · LAST ${last ? fmtDate(last.date) : '—'}</div>
+            <div class="prog-meta">${p.coach ? `${esc(p.place.toUpperCase())} · COACH PICKS` : `${p.exercises.length} EXERCISES`} · LAST ${last ? fmtDate(last.date) : '—'}</div>
           </div>
           <div class="prog-right">
             ${p.short === nextType ? '<span class="prog-next">NEXT UP</span>' : ''}
@@ -2229,6 +2490,19 @@ async function openLog(type) {
     }
   })
 
+  if (prog.coach) {
+    modalRoot().innerHTML = shell({
+      title: prog.name, wide:true, spine: typeColor(type),
+      sub: `${prog.place.toUpperCase()} · ${prog.coach.toUpperCase()} · READINESS ${ready.verdict}`,
+      body: `<div class="modal-hint">${esc(prog.coach.split(' ')[0])} picks the exercises, so there are no fixed sets. Note what you did and how it felt.</div>
+      <div class="log-sess-note">
+        <div class="lbl-s">SESSION NOTE</div>
+        <input id="in-sess-note" placeholder="What did you work on?">
+      </div>`,
+      ghost:'← BACK', ghostAct:'open-pick', primary:'FINISH SESSION', primaryAct:'save-session',
+    })
+    return
+  }
   modalRoot().innerHTML = shell({
     title: prog.name, wide:true, spine: typeColor(type),
     sub: `READINESS ${ready.verdict} · ${progressionOn ? 'PROGRESSION ON' : 'HOLD WEIGHTS'} · ${prog.exercises.length} EXERCISES`,
@@ -2413,7 +2687,7 @@ async function importConfirm() {
   const btn = modalRoot().querySelector('[data-act="import-confirm"]')
   if (btn) { btn.textContent = 'IMPORTING…'; btn.disabled = true }
   try {
-    const res = await fetch('/api/import/confirm', {
+    const res = await fetch(withBase('/api/import/confirm'), {
       method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ sessions: importParsed }),
     })
@@ -2439,6 +2713,7 @@ function render() {
   if (tab === 'training') renderTraining()
   if (tab === 'goals') renderGoals()
   if (tab === 'notes') renderNotes()
+  postHeight()
 }
 
 function setTab(t, pushHash = true) {
@@ -2448,6 +2723,7 @@ function setTab(t, pushHash = true) {
   render()
   document.getElementById(`view-${tab}`).scrollTop = 0
   window.scrollTo(0, 0)
+  postHeight()
 }
 
 function handleHash() {
@@ -2496,8 +2772,46 @@ async function reload(keys) {
 }
 
 async function init() {
+  await loadHubOrigin()
   await Promise.all(Object.values(LOADERS).map(fn => fn()))
-  handleHash()
+  // Embed: ?tab= picks the opening tab and wins over the hash.
+  const qTab = EMBED && new URLSearchParams(location.search).get('tab')
+  if (TABS.includes(qTab)) setTab(qTab, false)
+  else handleHash()
+  watchEmbedHeight()
+  postHeight()
+}
+
+// Embed: the hub switches tabs with postMessage({ type:'fitlog:tab', tab }).
+// The sender must be HUB_ORIGIN. replaceState keeps the hash in step without
+// adding to the parent's back history.
+if (EMBED) window.addEventListener('message', e => {
+  const target = parentTarget()
+  if (!target || e.source !== window.parent || e.origin !== target || !e.data || e.data.type !== 'fitlog:tab' || !TABS.includes(e.data.tab)) return
+  const next = e.data.tab
+  setTab(next, false)
+  history.replaceState(null, '', next === 'today' ? '#' : `#${next}`)
+})
+
+// Embed: a reconnect happens in another tab, so pick up the new Fitbit status
+// when this window is focused or becomes visible again. No polling.
+if (EMBED) {
+  let fitbitRefresh = null
+  const refreshFitbit = () => {
+    if (document.visibilityState === 'hidden') return
+    if (fitbitRefresh) return
+    fitbitRefresh = (async () => {
+      try {
+        const f = await api('GET', '/api/fitbit/status')
+        syncFitbit = f || { connected:false, ok:false, reconnect_url:'/auth/google-health' }
+        render()
+      } finally { fitbitRefresh = null }
+    })()
+  }
+  window.addEventListener('focus', refreshFitbit)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshFitbit()
+  })
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -2536,7 +2850,11 @@ const ACTIONS = {
   'note-cat': el => { noteCat = el.dataset.cat; renderNotes() },
   drawer: el => openDrawer(el.dataset.name),
   session: el => openSessionDetail(+el.dataset.id),
-  reconnect: el => { location.href = el.dataset.url || '/auth/google-health' },
+  reconnect: el => {
+    const url = withBase(el.dataset.url || '/auth/google-health')
+    if (EMBED) window.open(url, '_blank', 'noopener')
+    else location.href = url
+  },
   'import-preview': () => importPreview(),
   'import-confirm': () => importConfirm(),
   'pr-close': () => { closePR(); setTab('training') },

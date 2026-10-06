@@ -46,6 +46,19 @@ One more profile key has no field in the modal: `milestone_labels`, a JSON objec
 `{"105":"HALFWAY"}`, names the round-number marks on the hero scale. Set it through
 `POST /api/goals` if you want words instead of numbers there.
 
+The embed score card shows a Styku scan when these goals are set (EDIT GOALS, or
+`POST /api/goals`). They are data, not part of the page:
+
+| Key | Example (not a real scan) |
+| --- | --- |
+| `styku_date` | `2000-01-01` |
+| `styku_bf_pct` | `25.0` |
+| `styku_weight_lb` | `180.0` |
+| `styku_lean_lb` | `135.0` |
+
+Weight and lean mass are stored in pounds. The row prints kilograms from those
+pounds, then the pounds underneath.
+
 Log a bodyweight, log a session, and the app has everything it needs. Until height and
 birth date are set, the calorie budget tile says so rather than guessing.
 
@@ -89,6 +102,7 @@ Fitbit data comes via the **Google Health API v4**, not the old Fitbit Web API.
    client with callback `http://localhost:7779/auth/google-health/callback`.
 2. Save the downloaded client secret as `.google-credentials.json`.
 3. Visit `/auth/google-health` to consent, then `POST /api/fitbit/sync?days=3`.
+   The server also re-syncs every four hours in process.
 
 Two things worth knowing before you invest in this path:
 
@@ -120,9 +134,56 @@ flyctl secrets set GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... \
                    WITHINGS_CLIENT_ID=... WITHINGS_CLIENT_SECRET=...
 ```
 
-OAuth callbacks are derived from the Fly app name automatically. Override with
-`PUBLIC_URL=https://your.domain` for a custom domain, and add the matching callback
-URLs to both developer consoles.
+OAuth callbacks are derived from the public origin, with no path prefix:
+
+- `https://<host>/auth/google-health/callback`
+- `https://<host>/auth/withings/callback`
+
+Fitlog is served at the **root** of its own hostname behind Cloudflare Access
+(`https://fitlog.<hub-domain>`), not under `/fitlog/`. Set
+
+```bash
+PUBLIC_URL=https://fitlog.example.com
+```
+
+with no trailing slash and no `/fitlog`. `PUBLIC_URL` is that origin only. A
+trailing slash is stripped, so the redirect URIs stay
+`${PUBLIC_URL}/auth/google-health/callback` and
+`${PUBLIC_URL}/auth/withings/callback`. Register those exact URLs in the Google
+and Withings consoles.
+
+The page still works if something mounts it under `/fitlog/`: the frontend
+prefixes `/api` and `/auth` only when `location.pathname` starts with
+`/fitlog`. At `/` the prefix is empty.
+
+To let the hub frame this host, set `FRAME_ANCESTORS` to the hub origin
+(space-separated if there is more than one). The default is `'self'`, which
+blocks every other origin. Every response also sends
+`X-Content-Type-Options: nosniff`.
+
+`HUB_ORIGIN` is the one origin embed mode may talk to. Set it to the same hub
+origin you allow in `FRAME_ANCESTORS` (that list can name more than one
+source; this value is exactly one):
+
+```bash
+FRAME_ANCESTORS=https://hub.example.com
+HUB_ORIGIN=https://hub.example.com
+```
+
+It must be a bare `https` origin. For local dev, `http://localhost` or
+`http://127.0.0.1` must include a port (`http://localhost:4321`). No path,
+query, hash, or trailing slash. A bare `http://localhost` is rejected.
+`GET /api/config` returns `{ "hubOrigin": "https://hub.example.com" }`, or
+`{ "hubOrigin": null }` when the variable is unset or invalid. The page posts
+`fitlog:height` to that origin and accepts `fitlog:tab` only from it. It never
+uses `*` and never uses fitlog's own origin. If the value is missing, invalid,
+or equal to this page's origin, the page posts nothing and ignores parent
+messages.
+
+`POST /api/dev/sync-prod` and `GET /api/health/raw` answer 404 unless
+`FITLOG_DEBUG=1`. Leave that flag unset on the public host. `POST /api/fitbit/sync`
+and `POST /api/withings/sync` stay available. In production they sit behind
+Cloudflare Access. The four-hour Fitbit refresh calls the sync function in process.
 
 ### There is no login
 
@@ -138,7 +199,10 @@ proxy with basic auth. Do not skip this and then connect your scale to it.
 | `PORT` | `7779` | HTTP port |
 | `DB_PATH` | `./fitness.db` | SQLite file location |
 | `FITLOG_TZ` | `Asia/Dubai` | Timezone for "today" |
-| `PUBLIC_URL` | derived | Base URL for OAuth callbacks |
+| `PUBLIC_URL` | derived | Origin only, for OAuth callbacks. Root custom domain, no `/fitlog` path |
+| `FRAME_ANCESTORS` | `'self'` | CSP `frame-ancestors` source list. Set to the hub origin so the hub can frame this host |
+| `HUB_ORIGIN` | unset | Bare hub origin for embed `postMessage` (`fitlog:height` out, `fitlog:tab` in). `https://host`, or `http://localhost:port` |
+| `FITLOG_DEBUG` | unset | `1` enables `/api/dev/*` and `/api/health/raw`. Sync POSTs stay on without it |
 | `FLY_APP` | from `fly.toml` | Target app for the dev prod-DB pull |
 | `GOOGLE_CLIENT_ID` / `_SECRET` | - | Google Health OAuth, production only |
 | `WITHINGS_CLIENT_ID` / `_SECRET` | - | Withings OAuth, production only |
@@ -161,7 +225,10 @@ GET  /api/recovery                 daily RHR and HRV
 GET|POST /api/notes                insight notes, categorised
 POST /api/withings/sync?days=N     pull weight
 POST /api/fitbit/sync?days=N       pull steps, sleep, workouts, RHR, HRV
+GET  /api/health/raw               raw Health API response (FITLOG_DEBUG=1)
+POST /api/dev/sync-prod            replace the local db from prod (FITLOG_DEBUG=1, not on Fly)
 GET  /api/fitbit/status /api/withings/status
+GET  /api/config                    `{ hubOrigin }` for embed postMessage, or null
 ```
 
 `POST /api/log` is the one worth knowing:
