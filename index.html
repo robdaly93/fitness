@@ -849,8 +849,8 @@ function noteCats() {
 }
 const TABS = ['today', 'training', 'goals', 'notes']
 
-// Mounted under /fitlog/ behind the robert-hub proxy, every /api and /auth path
-// takes that prefix. At the root BASE is empty and nothing changes.
+// Served at the root of its own host, so BASE is empty and /api and /auth are unchanged.
+// If the page is opened under /fitlog/, those calls keep that prefix.
 const BASE = (location.pathname.match(/^\/fitlog(?=\/|$)/) || [''])[0]
 const withBase = u => u.startsWith('/') ? BASE + u : u
 // ?embed=1 hides FITLOG's own chrome; the host drives tabs through the hash (#goals).
@@ -2787,7 +2787,7 @@ async function init() {
 // adding to the parent's back history.
 if (EMBED) window.addEventListener('message', e => {
   const target = parentTarget()
-  if (!target || e.origin !== target || !e.data || e.data.type !== 'fitlog:tab' || !TABS.includes(e.data.tab)) return
+  if (!target || e.source !== window.parent || e.origin !== target || !e.data || e.data.type !== 'fitlog:tab' || !TABS.includes(e.data.tab)) return
   const next = e.data.tab
   setTab(next, false)
   history.replaceState(null, '', next === 'today' ? '#' : `#${next}`)

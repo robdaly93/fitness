@@ -1,5 +1,5 @@
 // The only origin embed mode may postMessage to, or accept fitlog:tab from.
-// A bare https origin, or http://localhost / http://127.0.0.1 (optional port) for dev.
+// A bare https origin, or http://localhost / http://127.0.0.1 with an explicit port.
 // Anything else, including '*', a path, or fitlog's own origin, is not a target.
 (function (root, factory) {
   const api = factory()
@@ -16,7 +16,8 @@
     if (url.search || url.hash) return null
     if (url.pathname !== '/') return null
     if (url.origin !== raw) return null
-    const local = url.protocol === 'http:' && (url.hostname === 'localhost' || url.hostname === '127.0.0.1')
+    const localHost = url.hostname === 'localhost' || url.hostname === '127.0.0.1'
+    const local = url.protocol === 'http:' && localHost && url.port !== ''
     if (url.protocol !== 'https:' && !local) return null
     return url.origin
   }

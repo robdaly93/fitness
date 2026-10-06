@@ -6,16 +6,17 @@ const path = require('path')
 const { spawn } = require('child_process')
 const { hubOrigin, messageTarget } = require('../hub-origin')
 
-test('hub origin is a bare https origin or http localhost', () => {
+test('hub origin is a bare https origin or http localhost with a port', () => {
   assert.equal(hubOrigin('https://hub.example.com'), 'https://hub.example.com')
   assert.equal(hubOrigin('https://hub.example.com:8443'), 'https://hub.example.com:8443')
-  assert.equal(hubOrigin('http://localhost'), 'http://localhost')
   assert.equal(hubOrigin('http://localhost:4321'), 'http://localhost:4321')
   assert.equal(hubOrigin('http://127.0.0.1:3000'), 'http://127.0.0.1:3000')
   assert.equal(hubOrigin('  https://hub.example.com  '), 'https://hub.example.com')
 
   for (const bad of [
     undefined, null, '', '*',
+    'http://localhost',
+    'http://127.0.0.1',
     'https://hub.example.com/',
     'https://hub.example.com/fitlog',
     'https://hub.example.com?x=1',
@@ -42,6 +43,7 @@ test('the page posts height to the configured target and checks the same origin'
   assert.match(html, /postMessage\(\{ type:'fitlog:height', height \}, target\)/)
   assert.equal(/postMessage\([^)]*location\.origin/.test(html), false)
   assert.equal(/postMessage\([^)]*'\*'/.test(html), false)
+  assert.match(html, /e\.source !== window\.parent/)
   assert.match(html, /e\.origin !== target/)
 })
 

@@ -132,7 +132,7 @@ test('default CSP is frame-ancestors self', async (t) => {
   assert.match(res.headers['content-security-policy'], /frame-ancestors 'self'/)
 })
 
-test('debug and destructive routes are 404 unless FITLOG_DEBUG=1', async (t) => {
+test('dev and raw routes are 404 unless FITLOG_DEBUG=1; sync POSTs stay open', async (t) => {
   const off = await startServer(7793, {})
   t.after(() => stop(off.proc))
   const on = await startServer(7794, { FITLOG_DEBUG: '1' })
@@ -140,8 +140,6 @@ test('debug and destructive routes are 404 unless FITLOG_DEBUG=1', async (t) => 
 
   for (const [method, path] of [
     ['POST', '/api/dev/sync-prod'],
-    ['POST', '/api/fitbit/sync'],
-    ['POST', '/api/withings/sync'],
     ['GET', '/api/health/raw'],
     ['GET', '/api/health/raw?type=steps'],
   ]) {
@@ -150,10 +148,20 @@ test('debug and destructive routes are 404 unless FITLOG_DEBUG=1', async (t) => 
     assert.equal(fs.existsSync(off.db), true)
   }
 
+  for (const [method, path] of [
+    ['POST', '/api/fitbit/sync'],
+    ['POST', '/api/withings/sync'],
+  ]) {
+    const open = await req(7793, method, path)
+    assert.notEqual(open.status, 404, `${method} ${path} should not require FITLOG_DEBUG`)
+  }
+
   const raw = await req(7794, 'GET', '/api/health/raw')
   assert.equal(raw.status, 401)
   const sync = await req(7794, 'POST', '/api/fitbit/sync')
   assert.equal(sync.status, 401)
+  const withings = await req(7793, 'POST', '/api/withings/sync')
+  assert.equal(withings.status, 401)
   const today = await req(7793, 'GET', '/api/today')
   assert.equal(today.status, 200)
   const status = await req(7793, 'GET', '/api/fitbit/status')

@@ -142,7 +142,21 @@ app.use((req, res, next) => {
   next()
 })
 app.use(express.json())
-app.use(express.static(__dirname))
+
+// Only the files the page loads. The database, server source, and secrets stay unserved.
+const PUBLIC_FILES = new Map([
+  ['/', 'index.html'],
+  ['/index.html', 'index.html'],
+  ['/weight-units.js', 'weight-units.js'],
+  ['/hub-origin.js', 'hub-origin.js'],
+  ['/favicon.svg', 'favicon.svg'],
+])
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next()
+  const name = PUBLIC_FILES.get(req.path)
+  if (!name) return next()
+  res.sendFile(name, { root: __dirname }, err => { if (err) next(err) })
+})
 
 // Fixed pages only. Query values and provider errors are never written into HTML.
 function authPage(title, message, retry) {
@@ -775,10 +789,7 @@ async function fitbitSyncHandler(req, res) {
   res.json(results)
 }
 
-app.post('/api/fitbit/sync', (req, res) => {
-  if (!debugEnabled()) return res.status(404).json({ error: 'not found' })
-  return fitbitSyncHandler(req, res)
-})
+app.post('/api/fitbit/sync', (req, res) => fitbitSyncHandler(req, res))
 
 app.get('/api/recovery', (req, res) => {
   res.json(q('SELECT date, rhr, hrv_ms FROM daily_recovery ORDER BY date').all([]))
@@ -879,10 +890,7 @@ app.get('/api/withings/status', (req, res) => {
   res.json(syncStatus(wLoadTokens(), { reconnect_url: '/auth/withings' }))
 })
 
-app.post('/api/withings/sync', (req, res, next) => {
-  if (!debugEnabled()) return res.status(404).json({ error: 'not found' })
-  next()
-}, async (req, res) => {
+app.post('/api/withings/sync', async (req, res) => {
   try {
     const token = await wAccessToken()
     const days = parseInt(req.query.days) || 14

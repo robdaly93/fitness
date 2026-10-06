@@ -92,8 +92,7 @@ per-person.
    callback `http://localhost:7779/auth/withings/callback`.
 2. Save `.withings-credentials.json` in the project root:
    `{"client_id":"...","client_secret":"..."}`
-3. Visit `/auth/withings` once to authorise, then with `FITLOG_DEBUG=1` run
-   `POST /api/withings/sync?days=3`. The flag is off on a public host.
+3. Visit `/auth/withings` once to authorise, then `POST /api/withings/sync?days=3`.
 
 ### Steps, sleep, runs and recovery from Fitbit
 
@@ -102,9 +101,8 @@ Fitbit data comes via the **Google Health API v4**, not the old Fitbit Web API.
 1. Create a Google Cloud project, enable the Google Health API, and create an OAuth
    client with callback `http://localhost:7779/auth/google-health/callback`.
 2. Save the downloaded client secret as `.google-credentials.json`.
-3. Visit `/auth/google-health` to consent. A manual `POST /api/fitbit/sync?days=3`
-   needs `FITLOG_DEBUG=1`. The server also re-syncs every four hours in process,
-   without that flag.
+3. Visit `/auth/google-health` to consent, then `POST /api/fitbit/sync?days=3`.
+   The server also re-syncs every four hours in process.
 
 Two things worth knowing before you invest in this path:
 
@@ -172,8 +170,9 @@ FRAME_ANCESTORS=https://hub.example.com
 HUB_ORIGIN=https://hub.example.com
 ```
 
-It must be a bare `https` origin, or `http://localhost` / `http://127.0.0.1`
-with an optional port for local dev. No path, query, hash, or trailing slash.
+It must be a bare `https` origin. For local dev, `http://localhost` or
+`http://127.0.0.1` must include a port (`http://localhost:4321`). No path,
+query, hash, or trailing slash. A bare `http://localhost` is rejected.
 `GET /api/config` returns `{ "hubOrigin": "https://hub.example.com" }`, or
 `{ "hubOrigin": null }` when the variable is unset or invalid. The page posts
 `fitlog:height` to that origin and accepts `fitlog:tab` only from it. It never
@@ -181,10 +180,10 @@ uses `*` and never uses fitlog's own origin. If the value is missing, invalid,
 or equal to this page's origin, the page posts nothing and ignores parent
 messages.
 
-`POST /api/dev/sync-prod`, `GET /api/health/raw`, `POST /api/fitbit/sync` and
-`POST /api/withings/sync` answer 404 unless `FITLOG_DEBUG=1`. The four-hour
-Fitbit refresh calls the sync function in process, so it does not need the
-flag. Leave the flag unset on the public host.
+`POST /api/dev/sync-prod` and `GET /api/health/raw` answer 404 unless
+`FITLOG_DEBUG=1`. Leave that flag unset on the public host. `POST /api/fitbit/sync`
+and `POST /api/withings/sync` stay available. In production they sit behind
+Cloudflare Access. The four-hour Fitbit refresh calls the sync function in process.
 
 ### There is no login
 
@@ -202,8 +201,8 @@ proxy with basic auth. Do not skip this and then connect your scale to it.
 | `FITLOG_TZ` | `Asia/Dubai` | Timezone for "today" |
 | `PUBLIC_URL` | derived | Origin only, for OAuth callbacks. Root custom domain, no `/fitlog` path |
 | `FRAME_ANCESTORS` | `'self'` | CSP `frame-ancestors` source list. Set to the hub origin so the hub can frame this host |
-| `HUB_ORIGIN` | unset | Bare hub origin for embed `postMessage` (`fitlog:height` out, `fitlog:tab` in). `https://host` or `http://localhost[:port]` |
-| `FITLOG_DEBUG` | unset | `1` enables `/api/dev/*`, `/api/health/raw`, and the manual sync POSTs |
+| `HUB_ORIGIN` | unset | Bare hub origin for embed `postMessage` (`fitlog:height` out, `fitlog:tab` in). `https://host`, or `http://localhost:port` |
+| `FITLOG_DEBUG` | unset | `1` enables `/api/dev/*` and `/api/health/raw`. Sync POSTs stay on without it |
 | `FLY_APP` | from `fly.toml` | Target app for the dev prod-DB pull |
 | `GOOGLE_CLIENT_ID` / `_SECRET` | - | Google Health OAuth, production only |
 | `WITHINGS_CLIENT_ID` / `_SECRET` | - | Withings OAuth, production only |
@@ -224,8 +223,8 @@ GET|POST /api/steps /api/sleep /api/diet /api/runs
 GET|POST /api/goals                the key/value profile described above
 GET  /api/recovery                 daily RHR and HRV
 GET|POST /api/notes                insight notes, categorised
-POST /api/withings/sync?days=N     pull weight (FITLOG_DEBUG=1)
-POST /api/fitbit/sync?days=N       pull steps, sleep, workouts, RHR, HRV (FITLOG_DEBUG=1)
+POST /api/withings/sync?days=N     pull weight
+POST /api/fitbit/sync?days=N       pull steps, sleep, workouts, RHR, HRV
 GET  /api/health/raw               raw Health API response (FITLOG_DEBUG=1)
 POST /api/dev/sync-prod            replace the local db from prod (FITLOG_DEBUG=1, not on Fly)
 GET  /api/fitbit/status /api/withings/status
