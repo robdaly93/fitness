@@ -47,22 +47,22 @@ test('POST /api/goals stores the four Styku fields and GET returns them', async 
   t.after(() => new Promise(resolve => { proc.once('exit', resolve); proc.kill('SIGTERM'); setTimeout(resolve, 1500) }))
 
   const payload = {
-    styku_date: '2026-09-21',
-    styku_bf_pct: 19.7,
-    styku_weight_lb: 199,
-    styku_lean_lb: 159.8,
+    styku_date: '2000-01-01',
+    styku_bf_pct: 25.0,
+    styku_weight_lb: 180.0,
+    styku_lean_lb: 135.0,
   }
   const saved = await request(7799, 'POST', '/api/goals', payload)
   assert.equal(saved.status, 200)
   const wrote = JSON.parse(saved.body)
-  assert.equal(wrote.styku_date, '2026-09-21')
-  assert.equal(wrote.styku_bf_pct, 19.7)
-  assert.equal(wrote.styku_weight_lb, 199)
-  assert.equal(wrote.styku_lean_lb, 159.8)
+  assert.equal(wrote.styku_date, '2000-01-01')
+  assert.equal(wrote.styku_bf_pct, 25)
+  assert.equal(wrote.styku_weight_lb, 180)
+  assert.equal(wrote.styku_lean_lb, 135)
 
   const got = await request(7799, 'GET', '/api/goals')
   assert.equal(got.status, 200)
   assert.deepEqual(JSON.parse(got.body), wrote)
-  assert.equal(kgFromLb(wrote.styku_weight_lb), '90.3')
-  assert.equal(kgFromLb(wrote.styku_lean_lb), '72.5')
+  assert.equal(kgFromLb(wrote.styku_weight_lb), '81.6')
+  assert.equal(kgFromLb(wrote.styku_lean_lb), '61.2')
 })

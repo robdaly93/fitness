@@ -49,12 +49,12 @@ One more profile key has no field in the modal: `milestone_labels`, a JSON objec
 The embed score card shows a Styku scan when these goals are set (EDIT GOALS, or
 `POST /api/goals`). They are data, not part of the page:
 
-| Key | Example |
+| Key | Example (not a real scan) |
 | --- | --- |
-| `styku_date` | `2026-09-21` |
-| `styku_bf_pct` | `19.7` |
-| `styku_weight_lb` | `199.0` |
-| `styku_lean_lb` | `159.8` |
+| `styku_date` | `2000-01-01` |
+| `styku_bf_pct` | `25.0` |
+| `styku_weight_lb` | `180.0` |
+| `styku_lean_lb` | `135.0` |
 
 Weight and lean mass are stored in pounds. The row prints kilograms from those
 pounds, then the pounds underneath.

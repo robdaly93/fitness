@@ -27,7 +27,7 @@ test('body-weight pounds use the kilograms that are printed', () => {
   assert.equal(lbFromKg(17.24), lbFromKg(17.2))
 })
 
-test('Styku pounds convert to the kilograms on the scan row', () => {
-  assert.equal(kgFromLb(199.0), '90.3')
-  assert.equal(kgFromLb(159.8), '72.5')
+test('example scan pounds convert to the kilograms on the scan row', () => {
+  assert.equal(kgFromLb(180.0), '81.6')
+  assert.equal(kgFromLb(135.0), '61.2')
 })
